@@ -1,0 +1,6 @@
+-main a8.Main
+-cp src
+-lib tink_lang
+-lib tink_core
+-python target/path.py
+-debug
