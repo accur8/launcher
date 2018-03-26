@@ -2,111 +2,146 @@ package a8;
 
 
 import sys.FileSystem;
+import a8.Streams;
 
 using Lambda;
 using a8.PathOps;
+using a8.StreamOps;
+using StringTools;
+
 import haxe.Json;
 import python.lib.subprocess.Popen;
 import python.lib.Subprocess;
-import python.lib.threading.Thread;
 import python.lib.io.FileIO;
+import python.lib.io.TextIOBase;
 import python.Bytes;
 import a8.parser.Position;
 import a8.parser.Parser;
+import python.Lib.PySys;
+import haxe.io.Path;
+import a8.PyOps;
+import python.lib.Subprocess;
 
 class Main {
 
-    static function pipe(context: String, infile: FileIO): Thread {
+    public static function main(): Void {
 
-        function impl() {
-            var iter = new python.HaxeIterator<Bytes>(cast infile);
-            for ( line in iter ) {
-                python.Lib.print(context + " -- " + line.decode("utf-8"));
-            }
-        }
+        var execPath = PathOps.executablePath();
 
-        var th = new Thread({target:impl});
-        th.start();
-
-        return th;
-
-    }
-
-    static public function main(): Void {
-
-        if ( false )
-            MacroPlay.run();
-
-        var ep = PathOps.executablePath();
-        var pp = PathOps.programPath();
-        var configFile = ep.parent().entry(ep.file + ".json");
-
-        trace("python.lib args:" + python.lib.Sys.argv);
-        trace("python.lib executable:" + python.lib.Sys.executable);
-
-        trace("args:" + Sys.args());
-        trace("executablePath: " + ep);
-        trace("executablePath Parent: " + ep.parent());
-        trace("programPath: " + pp);
-        trace("config: " + configFile);
-
-        var p0 = PathOps.path("/Users/glen/code/glen/haxe-python/foo.py");
-        var p1 = PathOps.path("foo.py");
-
-        trace("-- strings 1 --");
-        trace(p0.toString());
-        trace(p1.toString());
-        trace("-- strings 2 --");
+        var appName = execPath.file;
+        var configFile = execPath.parent().entry(execPath.file + ".json");
 
         var config: LaunchConfig = Json.parse(configFile.readText());
 
-        trace(config.args);
+        var logsDir = PathOps.path("logs");
+        var logArchivesDir = logsDir.entry("archives");
+        if ( !logArchivesDir.exists() )
+            logArchivesDir.makeDirectories();
 
-        // var popen = new Popen(config.args, null, null, null, Subprocess.PIPE, Subprocess.PIPE);
+        var launcher = 
+            new Launcher(
+                config,
+                appName,
+                timestampStr(),
+                logsDir,
+                logArchivesDir
+            );
 
-        // pipe("stdout", popen.stdout);
-        // pipe("stderr", popen.stderr);
+        launcher.runAndWait();
 
-        // popen.wait();
+    }
 
-        trace("program complete closing");
-
-
-        var pos = new Position(0);
-
-        var myParser = new MyParser();
-
-        // trace(myParser.Root.fullParse("foo"));
-        // trace(myParser.Root.fullParse("bar"));
-        // trace(myParser.Root.fullParse("boom"));
-
-        // trace(myParser.FooAndBar.fullParse("foo_bar_"));
-        trace(myParser.FooOrBarSeq.fullParse("foo_bar_bar_foo_foo_bar_foo_bar_"));
-        trace(myParser.FooOrBarSeq.fullParse("foo_bar_bar_foo_foo_bar_foo_bar_tim"));
-        trace(myParser.FooOrBarSeq4.fullParse("foo_bar_bar_foo_foo_bar_foo_bar_"));
-        trace(myParser.FooOrBarSeq4.fullParse("foo_bar_bar_"));
-
+    public static function timestampStr(): String {
+        var now = Date.now();
+        function pad(i: Int): String {
+            return ("" + i).lpad("0", 2);
+        }
+        return now.getFullYear() + pad(now.getMonth()) + pad(now.getDate()) + "_" + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
     }
 
 }
 
-@:tink 
-class MyParser extends ParserBuilder {
-    
-    @:lazy var Foo: Parser<String> = str("foo_");
 
-    @:lazy var Bar: Parser<String> = str("bar_");
 
-    @:lazy var FooOrBar: Parser<String> = Foo | Bar;
 
-    @:lazy var FooOrBarSeq: Parser<Array<String>> = FooOrBar.rep({min:1});
+class Launcher implements ValueClass {
 
-    @:lazy var FooOrBarSeq4: Parser<Array<String>> = FooOrBar.rep({min:4, max:4});
+    var config: LaunchConfig;
+    var appName: String;
+    var timestampStr: String;
+    var logsDir: Path;
+    var logArchivesDir: Path;
 
-    // @:lazy var FooAndBar = (Foo & Bar).void();
 
-    public function new() {
+    public function archiveOldLogs(): Void {
+
+        var prefix = appName + ".";
+        var suffix1 = ".details";
+        var suffix2 = ".errors";
+
+        var filesToArchive = 
+            logsDir
+                .files()
+                .filter(function(f) {
+                    var filename = f.basename();
+                    return 
+                        filename.startsWith(prefix) &&
+                        (filename.endsWith(suffix1) || filename.endsWith(suffix2));
+                });
+
+        var archivedFiles = 
+            filesToArchive
+                .map(function(f) {
+                    var target = logArchivesDir.entry(f.basename());
+                    f.moveTo(target);
+                    return target;
+                });
+
+        function gzipFiles() {
+            archivedFiles.iter(function(f) {
+                Subprocess.call(["gzip", f.realPathStr()]);
+            });
+        }
+
+        PyOps.spawn(gzipFiles);
+
     }
+
+
+    public function runAndWait(): Void {
+
+        archiveOldLogs();
+
+        var popen = new Popen(config.args, null, null, null, Subprocess.PIPE, Subprocess.PIPE);
+
+        function firstIO(out: OutputStream): Void {
+            out.write("first output at " + Main.timestampStr() + "\n");
+        }
+
+        var stdoutTee = tee(PySys.stdout, "details");
+        var pipeStdout = new Pipe(popen.stdout.asInputStream(), stdoutTee, firstIO);
+        pipeStdout.run();
+
+        var stderrTee = tee(PySys.stderr, "errors");
+        var pipeStderr = new Pipe(popen.stderr.asInputStream(), stderrTee, firstIO);
+        pipeStderr.run();
+
+        popen.wait();
+
+        stdoutTee.close();
+        stderrTee.close();
+
+    }
+
+
+    function tee(textIOBase: TextIOBase, extension: String): OutputStream {
+        return
+            new TeeOutputStream([
+                StreamOps.fileOutputStream(logsDir.entry(appName + "." + timestampStr + "." + extension).realPathStr()),
+                textIOBase.asOutputStream()
+            ]);
+    }
+
 
 }
 
@@ -115,7 +150,9 @@ typedef LaunchConfig = {
   var args: Array<String>;
 }
 
+
 /*
+
 
 cwd - current working directory relative to this config file
 mainClass - 
@@ -123,30 +160,36 @@ jvm args -
 auto restart - 
 
 
-
 == general library ==
     
-    * logging
-
+    * auto set appname
+    * properly set tmp folder
 
 
 == features ==
 
-    * entry date and time as the header for every log file
-        * stderr log is empty and on first bytes gets this header
-    * gzip and archive log files
-    * roll/archive large active log files
-    * max size for entire archive folder
-    * max size for this programs log files
+    * roll triggers
+        * time e.g. midnight
+        * size of file
+        * size of log folder
+        * size of archives folder
+        * size of this instances log files
     * warning/notification system
-
-
 
 
 == possibly someday ==
 
+    * external trigger to roll log files
     * semaphore to run a single instance
 
+
+== DONE ==
+
+    * put header in log file on first IO with timestamp of first IO
+    * timestamped log files (DONE)
+    * entry date and time as the header for every log file
+        * stderr log is empty and on first bytes gets this header
+    * gzip and archive log files
 
 
 */

@@ -33,6 +33,31 @@ class ParserHelper {
     public static var SuccessParser: Parser<Void> = new SuccessParser();
     public static var EndOfInputParser: Parser<Void> = new EndOfInputParser();
 
+
+}
+
+class MacroHelper {
+
+    // This macro generates code using Context.parse()
+      public static macro function trace_build_age_with_parse() {
+        var buildTime = Math.floor(Date.now().getTime() / 1000);
+
+        var code = '{
+          var runTime = Math.floor(Date.now().getTime() / 1000);
+          var age = runTime - $buildTime;
+          trace("Right now it\'s "+runTime+", and this build is "+age+" seconds old");
+        }';
+
+        return Context.parse(code, Context.currentPos());
+      }
+
+    public macro static function flattenTuple<A>(e0: ExprOf<Parser<A>>): Void {
+        // trace(e.toString()); // @:this this
+        // TInst(String,[])
+        trace(Context.typeof(e0));
+    }
+
+
 }
 
 
@@ -55,18 +80,13 @@ class ParserBuilder {
 abstract Parser<A>(SnippetParser<A>) {
 
     @:from
-    inline static public function fromString(s:String): Parser<String> {
+    static inline public function fromString(s:String): Parser<String> {
         return new Parser(new StringParser(s));
     }
 
     @:from
-    inline static public function fromSnippetParser<A>(p: SnippetParser<A>): Parser<A> {
+    static inline public function fromSnippetParser<A>(p: SnippetParser<A>): Parser<A> {
         return new Parser(p);
-    }
-
-    @:to
-    inline public function toSnippetParser(): SnippetParser<A> {
-        return this;
     }
 
     inline public function new(parseFn: SnippetParser<A>) {
@@ -77,8 +97,13 @@ abstract Parser<A>(SnippetParser<A>) {
         return cast this;
     }
 
+    @:to
+    inline public function toSnippetParser(): SnippetParser<A> {
+        return this;
+    }    
+
     @:op(A & B)
-    inline public function and<B>(rhs: Parser<B>): Parser<Tuple2<A,B>> {
+    inline public function and<B>(rhs: Parser<B>) {
         return cast new Parser(new AndParser(self(), rhs.self()));
     }
 
@@ -89,7 +114,7 @@ abstract Parser<A>(SnippetParser<A>) {
 
     @:op(A >> B)
     inline public function rand<B>(rhs: Parser<B>): Parser<B> {
-        return cast new Parser(new MapParser(new AndParser(self(), rhs.self()), function(t) { return t._1; }));
+        return cast new Parser(new MapParser(new AndParser(self(), rhs.self()), function(t) { return t._2; }));
     }
 
     @:op(A | B)

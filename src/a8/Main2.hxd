@@ -1,0 +1,92 @@
+package a8;
+
+
+import haxe.macro.Expr;
+import haxe.macro.Context;
+
+abstract Tuple2<A,B>(Array<Any>) {
+
+    inline public function new(a: A, b: B) {
+        this = [a, b];
+    }
+
+    inline public function _1(): A {
+        return this[0];
+    }
+
+    inline public function _2(): B {
+        return this[1];
+    }
+
+    inline public function toString(): String {
+        return haxe.Json.stringify(this);
+    }
+
+    inline macro public function flatten(_this: Expr): Expr {
+        trace(Context.typeof(_this));
+        // this is where I would remap the Tuple2
+        return _this;
+    }
+
+}
+
+
+class Main2 {
+
+
+    static public function main(): Void {
+
+        var a: Tuple2<String,Int> = new Tuple2("hllo", 1);
+        a.flatten();
+
+        var b = new Tuple2("hllo", null);
+        b.flatten();
+
+        var c = new Tuple2("hllo", bob());
+        c.flatten();
+
+        var pos = new Position(0);
+
+        var myParser = new MyParser();
+
+        // trace(myParser.Root.fullParse("foo"));
+        // trace(myParser.Root.fullParse("bar"));
+        // trace(myParser.Root.fullParse("boom"));
+
+        myParser.FooAndBar.flatten();
+
+        // trace(myParser.FooAndBar.fullParse("foo_bar_"));
+        trace(myParser.FooOrBarSeq.fullParse("foo_bar_bar_foo_foo_bar_foo_bar_"));
+        trace(myParser.FooOrBarSeq.fullParse("foo_bar_bar_foo_foo_bar_foo_bar_tim"));
+        trace(myParser.FooOrBarSeq4.fullParse("foo_bar_bar_foo_foo_bar_foo_bar_"));
+        trace(myParser.FooOrBarSeq4.fullParse("foo_bar_bar_"));
+    }
+
+    static function bob(): Null<Void> {
+        return null;
+    }
+
+}
+
+@:tink 
+class MyParser extends ParserBuilder {
+    
+    @:lazy var Foo: Parser<String> = str("foo_");
+
+    @:lazy var Bar: Parser<String> = str("bar_");
+
+    @:lazy var FooOrBar: Parser<String> = Foo | Bar;
+
+    @:lazy var FooAndBar = Foo & Bar;
+
+    @:lazy var FooOrBarSeq: Parser<Array<String>> = FooOrBar.rep({min:1});
+
+    @:lazy var FooOrBarSeq4: Parser<Array<String>> = FooOrBar.rep({min:4, max:4});
+
+    // @:lazy var FooAndBar = (Foo & Bar).void();
+
+    public function new() {
+    }
+
+}
+

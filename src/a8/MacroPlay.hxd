@@ -1,0 +1,15 @@
+package a8;
+
+
+import haxe.macro.Context;
+
+class MacroPlay {
+
+    public macro static function test(e0:ExprOf<String>) {
+        // trace(e.toString()); // @:this this
+        // TInst(String,[])
+        trace(Context.typeof(e0));
+        return e0;
+    }
+
+}
