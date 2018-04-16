@@ -1,0 +1,5 @@
+{
+  "kind": "jvm",
+  "mainClass": "com.ahsrcm.mobidash.RunBaseQubes",
+  "installDir": "/Users/glen/_a/qubes-install"
+}

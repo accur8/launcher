@@ -6,9 +6,18 @@ import python.lib.threading.Thread;
 
 
 @:pythonImport("shutil")
-extern class Shutil2 {
+extern class PythonShutil2 {
 
     public static function move(src:String, dst:String):Void;
+
+    public static function which(cmd:String):String;
+
+}
+
+@:pythonImport("os")
+extern class PythonOs2 {
+
+    public static function symlink(src: String, dst: String): Void;
 
 }
 

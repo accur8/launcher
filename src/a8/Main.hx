@@ -107,12 +107,106 @@ class Launcher implements ValueClass {
 
     }
 
+    function resolveStandardArgs(stdlauncher: ArgsLaunchConfig): ResolvedArgs {
+        return {
+            args: stdlauncher.args,
+            env: null,
+            cwd: null,
+            executable: null
+        };
+    }
+
+    function resolveJvmLaunchArgs(jvmlauncher: JvmLaunchConfig): ResolvedArgs {
+
+        var installDir = PathOps.path(jvmlauncher.installDir);
+        var installInventoryFile = installDir.entry("install-inventory.json");
+
+        var config: InstallInventory = Json.parse(installInventoryFile.readText());
+
+        // TODO add everything in the lib directory to the CLASSPATH
+
+        var launcherD: Dynamic = jvmlauncher;
+
+        installDir.entry("lib").entries().iter(function (e) {
+            var p = e.realPathStr();
+            if ( p.endsWith(".jar") || e.isDir() ) {
+                config.classpath.push(p);
+            } 
+        });
+        var classpath = config.classpath.join(":");
+
+        var args = new Array<String>();
+
+        var symlinkName = "j_" + appName;
+        var symlinkParent = installDir;
+        var javaAppNameSymLink = symlinkParent.realPathStr() + "/" + symlinkName;
+        var javaAppNameSymLinkPath = PathOps.path(javaAppNameSymLink);
+        var cmd = 
+            if ( !javaAppNameSymLinkPath.isFile() ) {
+                var javaExec = PythonShutil2.which("java");
+                trace("creating symlink " + javaExec + " --> " + javaAppNameSymLink);
+                PythonOs2.symlink(javaExec, javaAppNameSymLink);
+                if ( javaAppNameSymLinkPath.isFile() ) {
+                    "./" + symlinkName;
+                } else {
+                    "java";
+                }
+            } else {
+                "./" + symlinkName;
+            }
+
+        args.push(cmd);
+
+        args.push("-DappName=" + appName);
+
+        if ( launcherD.jvmArgs != null ) 
+            jvmlauncher.jvmArgs.iter(function(jvmArg) {
+                args.push(jvmArg);
+            });
+
+        args.push(jvmlauncher.mainClass);
+
+        if ( launcherD.args != null ) 
+            jvmlauncher.args.iter(function(arg) {
+                args.push(arg);
+            });
+
+        var env = python.lib.Os.environ;
+
+        var newEnv = env.copy();
+
+        // trace('set -x CLASSPATH "' + classpath + '"');
+
+        newEnv.set("CLASSPATH", classpath);
+        newEnv.set("LAUNCHER_INSTALL_DIR", installDir.realPathStr());
+        newEnv.set("LAUNCHER_WORKING_DIR", python.lib.Os.getcwd());
+        newEnv.set("LAUNCHER_EXEC_PATH", PathOps.executablePath().realPathStr());
+
+        return {
+            args: args,
+            env: newEnv,
+            cwd: installDir.realPathStr(),
+            executable: "./" + symlinkName
+        };
+
+    }
+
 
     public function runAndWait(): Void {
 
         archiveOldLogs();
 
-        var popen = new Popen(config.args, null, null, null, Subprocess.PIPE, Subprocess.PIPE);
+        var popenArgs = 
+            if ( config.kind == "jvm" ) 
+                resolveJvmLaunchArgs(cast config);
+            else if ( config.kind == "args" ) 
+                resolveStandardArgs(cast config);
+            else 
+                throw "unable to resolve config kind " + config.kind;
+
+        // trace("" + popenArgs.args);
+
+        var popen = new Popen(popenArgs.args, null, popenArgs.executable, null, Subprocess.PIPE, Subprocess.PIPE, null, false, false, popenArgs.cwd, popenArgs.env);
 
         function firstIO(out: OutputStream): Void {
             out.write("first output at " + Main.timestampStr() + "\n");
@@ -145,9 +239,43 @@ class Launcher implements ValueClass {
 
 }
 
-
-typedef LaunchConfig = {
-  var args: Array<String>;
+typedef ResolvedArgs = {
+    var args: Array<String>;
+    var env: python.Dict<String,String>;
+    var cwd: String;
+    var executable: String;
 }
 
+
+typedef LaunchConfig = {
+    var kind: String;
+}
+
+typedef JvmLaunchConfig = {
+    var config: AppInstallerConfig;
+    var mainClass: String;
+    var jvmArgs: Array<String>;
+    var installDir: String;
+    var args: Array<String>;
+}
+
+
+typedef ArgsLaunchConfig = {
+    var args: Array<String>;
+}
+
+typedef InstallInventory = {
+    var appInstallerConfig: AppInstallerConfig;
+    var classpath: Array<String>;
+}
+
+
+typedef AppInstallerConfig = {
+    var groupId: String;
+    var artifactId: String;
+    var version: String;
+    var appDir: String;
+    var libDir: String;
+    var webappExplode: Bool;
+}
 

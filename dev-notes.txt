@@ -3,11 +3,13 @@
 
 == launcher actions ==
 
-  * upgrade to a version | latest
+  * (install | upgrade) to a (version | latest)
     * make sure we have the artifacts locally 
       * use a8 repo
     * unpackge the app
   * run
+  * properly get symlink as the process name
+  * where to put logs directory
 
 
 
