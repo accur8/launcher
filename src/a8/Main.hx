@@ -27,7 +27,16 @@ using tink.CoreApi;
 @:tink 
 class Main {
 
-    public static var scheduler = PySched.scheduler();
+    public static var scheduler = {
+        var s = PySched.scheduler();
+        PyOps.spawn({ [] =>
+            while(true) {
+                s.run();
+                python.lib.Time.sleep(1);
+            }
+        });
+        s;
+    }
 
 
     public static function main(): Void {
@@ -111,18 +120,26 @@ class Launcher {
 
     }
 
-    function logDetail(msg: String): Void {
+    public function logDetail(msg: String): Void {
         if ( !config.quiet ) {
-            trace(msg);
+            _log(msg, pipedStdout);
         }
     }
     
     function logError(msg: String): Void {
-        trace("ERROR - " + msg);
+        _log("ERROR - " + msg, pipedStderr);
     }
     
     function logWarn(msg: String): Void {
-        trace("WARN - " + msg);
+        _log("WARN - " + msg, pipedStderr);
+    }
+
+    private function _log(msg: String, pipe: PipedStream): Void {
+        if ( pipe != null ) {
+            pipe.log(msg);
+        } else {
+            trace(msg);
+        }
     }
 
     function archiveOldLogs(): Void {
@@ -221,6 +238,8 @@ class Launcher {
                 args.push(jvmArg);
             });
 
+        // trace(classpath);
+
         args.push(jvmlauncher.mainClass);
 
         if ( launcherD.args != null ) 
@@ -251,9 +270,9 @@ class Launcher {
 
     public function runAndWait(): Void {
 
-        trace("installDir = " + installDir);
-        trace("logsDir = " + logsDir);
-        trace("logArchivesDir = " + logArchivesDir);
+        logDetail("installDir = " + installDir);
+        logDetail("logsDir = " + logsDir);
+        logDetail("logArchivesDir = " + logArchivesDir);
 
         archiveOldLogs();
 
@@ -265,7 +284,7 @@ class Launcher {
             else 
                 throw "unable to resolve config kind " + config.kind;
 
-        trace("running -- " + popenArgs.args);
+        logDetail("running -- " + popenArgs.args);
 
         var popen = new Popen(popenArgs.args, null, popenArgs.executable, null, Subprocess.PIPE, Subprocess.PIPE, null, false, false, popenArgs.cwd, popenArgs.env);
 
@@ -273,14 +292,22 @@ class Launcher {
             out.write("first output at " + Main.timestampStr() + "\n");
         }
 
+        logDetail("setting up pipes");
         this.pipedStdout = new PipedStream(this, popen.stdout.asInputStream(), PySys.stdout, "details", firstIO);
         this.pipedStderr = new PipedStream(this, popen.stderr.asInputStream(), PySys.stderr, "errors", firstIO);
 
-        this.pipedStdout.start;
-        this.pipedStderr.start;
-        initializeLogRollers();
+        this.pipedStdout.start();
+        this.pipedStderr.start();
 
+        // logDetail("pipes setup");
+
+        logDetail("initializeLogRollers");
+        initializeLogRollers();
+        logDetail("initializeLogRollers complete");
+
+        // logDetail("waiting for process to complete");
         popen.wait();
+        // logDetail("process completed with exit code " + popen.returncode);
 
         this.pipedStdout.close();
         this.pipedStdout.close();
@@ -293,6 +320,7 @@ class Launcher {
             config
                 .logRollers
                 .map([lr] => LogRollerOps.fromConfig(lr, this));
+        this.logRollers.iter([i]=>i.init());
     }
 
 }
@@ -310,6 +338,8 @@ class PipedStream {
     var fileOut: OutputStream;
     var pipe: Pipe;
 
+    var teeOut: OutputStream;
+
     var started = false;
 
     public function start() {
@@ -317,14 +347,25 @@ class PipedStream {
             this.started = true;
             this.fileOutputPath = outputFile(launcher.timestampStr);
             this.fileOut = StreamOps.fileOutputStream(fileOutputPath.realPathStr());
-            var tee = new TeeOutputStream([this.fileOut, stdxxx.asOutputStream()]);
-            this.pipe = new Pipe(processInput, tee, firstIO);
+            this.teeOut = new TeeOutputStream([this.fileOut, stdxxx.asOutputStream()]);
+            this.pipe = new Pipe(processInput, teeOut, firstIO);
             this.pipe.run();
         }
     }
 
     function outputFile(timestampStr: String): Path {
         return launcher.logsDir.entry(launcher.appName + "." + timestampStr + "." + fileExtension);
+    }
+
+    public function log(msg: String) {
+        if ( teeOut != null ) {
+            try {
+                teeOut.write(msg);
+                teeOut.write("\n");
+            } catch(e: Dynamic) {
+                trace("error logging - " + e);
+            }
+        }
     }
 
     public function rollover(timestampStr: String) {

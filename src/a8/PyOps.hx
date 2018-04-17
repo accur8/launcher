@@ -35,6 +35,7 @@ extern class PyScheduler {
     public function enterabs(delay: Float, priority: Float, action: Void->Void): PyEvent;
     public function enter(delay: Float, priority: Float, action: Void->Void): PyEvent;
     public function cancel(event: PyEvent): Void;
+    public function run(): Float;
 
 }
 

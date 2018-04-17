@@ -15,17 +15,25 @@ class LogRollerOps {
     }
 }
 
-
 interface LogRoller {
+    function init(): Void;
+    function onArchiveLogChanges(): Void;
+}
+
+class AbstractLogRoller {
+    public function init(): Void {
+    }
+    public function onArchiveLogChanges(): Void {
+    }
 }
 
 
 @:tink
-class MidnightLogRoller implements LogRoller {
+class MidnightLogRoller extends AbstractLogRoller implements LogRoller {
 
     var launcher: Launcher = _;
 
-    public function new(_) {
+    override public function init(): Void {
         schedule();
     }
 
@@ -34,22 +42,36 @@ class MidnightLogRoller implements LogRoller {
         var midnight = DateOps.midnight();
         var millisToMidnight = midnight.getTime() - now.getTime();
         var secondsToMidnight = millisToMidnight / 1000;
+        launcher.logDetail("schedule log rolling in " + secondsToMidnight + " seconds");
         Main.scheduler.enter(secondsToMidnight, 1.0, doMidnightRollover);
     }
 
     function doMidnightRollover() {
+        launcher.logDetail("running doMidnightRollover");
         var timestampStr = Main.timestampStr();
         // we want the details and error files to have same timestamp
         launcher.pipedStderr.rollover(timestampStr);
         launcher.pipedStdout.rollover(timestampStr);
         schedule();
+        launcher.logDetail("doMidnightRollover complete");
     }
 
 }
 
-class UnknownLogRoller implements LogRoller {
+@:tink
+class UnknownLogRoller extends AbstractLogRoller implements LogRoller {
 
-    public function new(config: Dynamic) {
-    }
+    var config: Dynamic = _;
+
+    public function new(_) {
+    }    
+
+}
+
+@:tink
+class CullOldArchivesLogRoller extends AbstractLogRoller implements LogRoller {
+
+    var config: Dynamic = _;
+    var launcher: Launcher = _;
 
 }
