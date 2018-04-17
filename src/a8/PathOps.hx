@@ -67,7 +67,7 @@ class PathOps {
     }
 
     public static function moveTo(source: Path, target: Path): Void {
-        PythonShutil2.move(source.toString(), target.toString());
+        PyShutil2.move(source.toString(), target.toString());
     }
 
     public static function entries(parentDir: Path): Array<Path> {

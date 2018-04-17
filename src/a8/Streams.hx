@@ -119,6 +119,8 @@ class Pipe {
 
     var byteCount: Int;
 
+    public var replaceOutput: OutputStream -> OutputStream;
+
     public function new(input: InputStream, output: OutputStream, firstIO: OutputStream->Void) {
         this.input = input;
         this.output = output;
@@ -133,6 +135,10 @@ class Pipe {
             var cont = true ;
             while ( cont ) {
                 var line = input.readLine();
+                if ( replaceOutput != null ) {
+                    output = replaceOutput(output);
+                    first = true;
+                }
                 if ( line == null ) {
                     cont = false;
                 } else {

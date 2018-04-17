@@ -1,40 +1,19 @@
 
 
-
 == launcher actions ==
 
   * (install | upgrade) to a (version | latest)
     * make sure we have the artifacts locally 
       * use a8 repo
     * unpackge the app
-  * run
   * properly get symlink as the process name
-  * where to put logs directory
-
-
-
-
-
-
-
-== launcher args ==
-
-  cwd - current working directory relative to this config file
-  mainClass - 
-  jvm args - 
-  auto restart - 
-  organization : artifactId
-
-
-== general library ==
-    
-    * handling of java symlink
-    * auto set appname
-    * properly set tmp folder
-    * auto restart w/backoff
 
 
 == features ==
+
+    * auto restart config setting
+    * properly set tmp folder
+    * auto restart w/backoff
 
     * roll triggers
         * time e.g. midnight
@@ -60,10 +39,7 @@
     * entry date and time as the header for every log file
         * stderr log is empty and on first bytes gets this header
     * gzip and archive log files
-
-
-
-
-
-
+    * where to put logs directory
+    * handling of java symlink
+    * auto set appname
 

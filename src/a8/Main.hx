@@ -21,8 +21,14 @@ import python.Lib.PySys;
 import haxe.io.Path;
 import a8.PyOps;
 import python.lib.Subprocess;
+import a8.LogRoller;
+using tink.CoreApi;
 
+@:tink 
 class Main {
+
+    public static var scheduler = PySched.scheduler();
+
 
     public static function main(): Void {
 
@@ -33,18 +39,18 @@ class Main {
 
         var config: LaunchConfig = Json.parse(configFile.readText());
 
-        var logsDir = PathOps.path("logs");
-        var logArchivesDir = logsDir.entry("archives");
-        if ( !logArchivesDir.exists() )
-            logArchivesDir.makeDirectories();
+        if ( config.quiet == null ) {
+            config.quiet = false;
+        }
+        if ( config.logRollers == null ) {
+            config.logRollers = [];
+        }
 
         var launcher = 
             new Launcher(
                 config,
                 appName,
-                timestampStr(),
-                logsDir,
-                logArchivesDir
+                timestampStr()
             );
 
         launcher.runAndWait();
@@ -63,17 +69,63 @@ class Main {
 
 
 
-
-class Launcher implements ValueClass {
+@:tink
+class Launcher {
 
     var config: LaunchConfig;
-    var appName: String;
-    var timestampStr: String;
-    var logsDir: Path;
-    var logArchivesDir: Path;
+    public var appName: String;
+    public var timestampStr: String;
 
+    @:lazy var installDir: Path = initDirectory(config.installDir, null, a8.PathOps.path(python.lib.Os.getcwd()));
+    @:lazy var logsDir: Path = initDirectory(config.logsDir, "logs", installDir);
+    @:lazy var logArchivesDir: Path = initDirectory("archives", null, logsDir, true);
 
-    public function archiveOldLogs(): Void {
+    public var pipedStdout: PipedStream;
+    public var pipedStderr: PipedStream;
+    var logRollers: Array<LogRoller>;
+
+    static function initDirectory(configEntry: String, secondEntry: String, basePath: Path, ?makeDirectory: Bool): Path {
+        var entry = if ( configEntry != null ) configEntry else secondEntry;
+        var d: Path = 
+            if ( entry == null ) {
+                basePath;
+            } else {
+                var asPath = PathOps.path(entry);
+                if (asPath.isAbsolute() ) {
+                    asPath;
+                } else {
+                    basePath.entry(entry);
+                }
+            }
+        if ( makeDirectory && !d.exists() ) {
+            d.makeDirectories();
+        }
+        return d;
+    }
+
+    public function new(config: LaunchConfig, appName: String, timestampStr: String) {
+
+        this.config = config;
+        this.appName = appName;
+        this.timestampStr = timestampStr;
+
+    }
+
+    function logDetail(msg: String): Void {
+        if ( !config.quiet ) {
+            trace(msg);
+        }
+    }
+    
+    function logError(msg: String): Void {
+        trace("ERROR - " + msg);
+    }
+    
+    function logWarn(msg: String): Void {
+        trace("WARN - " + msg);
+    }
+
+    function archiveOldLogs(): Void {
 
         var prefix = appName + ".";
         var suffix1 = ".details";
@@ -82,20 +134,28 @@ class Launcher implements ValueClass {
         var filesToArchive = 
             logsDir
                 .files()
-                .filter(function(f) {
+                .filter([f] => {
                     var filename = f.basename();
-                    return 
+                    (
                         filename.startsWith(prefix) &&
-                        (filename.endsWith(suffix1) || filename.endsWith(suffix2));
+                        (filename.endsWith(suffix1) || filename.endsWith(suffix2)));
                 });
 
+        archiveLogFiles(filesToArchive);
+
+    }
+
+    public function archiveLogFiles(files: Array<Path>): Void {
+
         var archivedFiles = 
-            filesToArchive
-                .map(function(f) {
+            files
+                .map([f] => {
                     var target = logArchivesDir.entry(f.basename());
                     f.moveTo(target);
-                    return target;
+                    target;
                 });
+
+        trace("archiving log files -- " + archivedFiles);
 
         function gzipFiles() {
             archivedFiles.iter(function(f) {
@@ -118,12 +178,9 @@ class Launcher implements ValueClass {
 
     function resolveJvmLaunchArgs(jvmlauncher: JvmLaunchConfig): ResolvedArgs {
 
-        var installDir = PathOps.path(jvmlauncher.installDir);
         var installInventoryFile = installDir.entry("install-inventory.json");
 
         var config: InstallInventory = Json.parse(installInventoryFile.readText());
-
-        // TODO add everything in the lib directory to the CLASSPATH
 
         var launcherD: Dynamic = jvmlauncher;
 
@@ -143,9 +200,9 @@ class Launcher implements ValueClass {
         var javaAppNameSymLinkPath = PathOps.path(javaAppNameSymLink);
         var cmd = 
             if ( !javaAppNameSymLinkPath.isFile() ) {
-                var javaExec = PythonShutil2.which("java");
+                var javaExec = PyShutil2.which("java");
                 trace("creating symlink " + javaExec + " --> " + javaAppNameSymLink);
-                PythonOs2.symlink(javaExec, javaAppNameSymLink);
+                PyOs2.symlink(javaExec, javaAppNameSymLink);
                 if ( javaAppNameSymLinkPath.isFile() ) {
                     "./" + symlinkName;
                 } else {
@@ -194,6 +251,10 @@ class Launcher implements ValueClass {
 
     public function runAndWait(): Void {
 
+        trace("installDir = " + installDir);
+        trace("logsDir = " + logsDir);
+        trace("logArchivesDir = " + logArchivesDir);
+
         archiveOldLogs();
 
         var popenArgs = 
@@ -204,7 +265,7 @@ class Launcher implements ValueClass {
             else 
                 throw "unable to resolve config kind " + config.kind;
 
-        // trace("" + popenArgs.args);
+        trace("running -- " + popenArgs.args);
 
         var popen = new Popen(popenArgs.args, null, popenArgs.executable, null, Subprocess.PIPE, Subprocess.PIPE, null, false, false, popenArgs.cwd, popenArgs.env);
 
@@ -212,30 +273,82 @@ class Launcher implements ValueClass {
             out.write("first output at " + Main.timestampStr() + "\n");
         }
 
-        var stdoutTee = tee(PySys.stdout, "details");
-        var pipeStdout = new Pipe(popen.stdout.asInputStream(), stdoutTee, firstIO);
-        pipeStdout.run();
+        this.pipedStdout = new PipedStream(this, popen.stdout.asInputStream(), PySys.stdout, "details", firstIO);
+        this.pipedStderr = new PipedStream(this, popen.stderr.asInputStream(), PySys.stderr, "errors", firstIO);
 
-        var stderrTee = tee(PySys.stderr, "errors");
-        var pipeStderr = new Pipe(popen.stderr.asInputStream(), stderrTee, firstIO);
-        pipeStderr.run();
+        this.pipedStdout.start;
+        this.pipedStderr.start;
+        initializeLogRollers();
 
         popen.wait();
 
-        stdoutTee.close();
-        stderrTee.close();
+        this.pipedStdout.close();
+        this.pipedStdout.close();
 
     }
 
 
-    function tee(textIOBase: TextIOBase, extension: String): OutputStream {
-        return
-            new TeeOutputStream([
-                StreamOps.fileOutputStream(logsDir.entry(appName + "." + timestampStr + "." + extension).realPathStr()),
-                textIOBase.asOutputStream()
-            ]);
+    function initializeLogRollers() {
+        this.logRollers = 
+            config
+                .logRollers
+                .map([lr] => LogRollerOps.fromConfig(lr, this));
     }
 
+}
+
+@:tink
+class PipedStream {
+    
+    var launcher: Launcher = _;
+    var processInput: InputStream = _;
+    var stdxxx: TextIOBase = _;
+    var fileExtension: String = _;
+    var firstIO: OutputStream->Void = _;
+
+    var fileOutputPath: Path;
+    var fileOut: OutputStream;
+    var pipe: Pipe;
+
+    var started = false;
+
+    public function start() {
+        if ( !started ) {
+            this.started = true;
+            this.fileOutputPath = outputFile(launcher.timestampStr);
+            this.fileOut = StreamOps.fileOutputStream(fileOutputPath.realPathStr());
+            var tee = new TeeOutputStream([this.fileOut, stdxxx.asOutputStream()]);
+            this.pipe = new Pipe(processInput, tee, firstIO);
+            this.pipe.run();
+        }
+    }
+
+    function outputFile(timestampStr: String): Path {
+        return launcher.logsDir.entry(launcher.appName + "." + timestampStr + "." + fileExtension);
+    }
+
+    public function rollover(timestampStr: String) {
+        // a role would be done as follows
+        //    1) get the pipedStream using a new file output
+        var newFileOutputPath = outputFile(timestampStr);
+        var newfileOut = StreamOps.fileOutputStream(launcher.logsDir.entry(launcher.appName + "." + timestampStr + "." + fileExtension).realPathStr());
+        this.pipe.replaceOutput = [oldOut] => {
+            oldOut.close();
+            newfileOut;
+        }
+
+        //    2) move the old file to archives and gzip them
+        var oldFileoutputPath = this.fileOutputPath;
+        this.fileOutputPath = newFileOutputPath;
+        launcher.archiveLogFiles([oldFileoutputPath]);
+
+        //    4) trigger any kind of disk space based log rollers
+
+    }
+
+    public function close() {
+        fileOut.close();
+    }
 
 }
 
@@ -246,17 +359,24 @@ typedef ResolvedArgs = {
     var executable: String;
 }
 
-
 typedef LaunchConfig = {
     var kind: String;
+    @:optional var quiet: Bool;
+    @:optional var installDir: String;
+    @:optional var logsDir: String;
+    @:optional var logRollers: Array<Dynamic>;
 }
 
 typedef JvmLaunchConfig = {
-    var config: AppInstallerConfig;
+    var groupId: String;
+    var artifactId: String;
+    var version: String;
     var mainClass: String;
-    var jvmArgs: Array<String>;
-    var installDir: String;
-    var args: Array<String>;
+    @:optional var jvmArgs: Array<String>;
+    @:optional var args: Array<String>;
+    @:optional var webappExplode: Bool;
+    @:optional var libDirKind: String;
+    @:optional var branch: String;
 }
 
 
@@ -269,13 +389,14 @@ typedef InstallInventory = {
     var classpath: Array<String>;
 }
 
-
 typedef AppInstallerConfig = {
     var groupId: String;
     var artifactId: String;
     var version: String;
-    var appDir: String;
-    var libDir: String;
+    var installDir: String;
+    var libDirKind: String;
     var webappExplode: Bool;
 }
+
+
 
