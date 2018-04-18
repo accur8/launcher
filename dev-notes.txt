@@ -30,6 +30,7 @@
     * external trigger to roll log files
     * semaphore to run a single instance
     * push log IO to hermes
+    * when rolling a log file into archives if the archive file already exists use a different name (don't delete it)
 
 
 == DONE ==
