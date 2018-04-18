@@ -70,6 +70,12 @@ class PathOps {
         PyShutil2.move(source.toString(), target.toString());
     }
 
+    public static function delete(source: Path): Void {
+        if ( exists(source) ) {
+            Os.remove(source.toString());
+        }
+    }
+
     public static function entries(parentDir: Path): Array<Path> {
         var sep = if ( parentDir.backslash ) "" else "/";
         return 

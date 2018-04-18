@@ -168,6 +168,7 @@ class Launcher {
             files
                 .map([f] => {
                     var target = logArchivesDir.entry(f.basename());
+                    target.delete();
                     f.moveTo(target);
                     target;
                 });
@@ -176,7 +177,7 @@ class Launcher {
 
         function gzipFiles() {
             archivedFiles.iter(function(f) {
-                Subprocess.call(["gzip", f.realPathStr()]);
+                Subprocess.call(["gzip", "-f", f.realPathStr()]);
             });
         }
 

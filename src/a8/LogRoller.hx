@@ -40,9 +40,10 @@ class MidnightLogRoller extends AbstractLogRoller implements LogRoller {
     function schedule() {
         var now = Date.now();
         var midnight = DateOps.midnight();
+        // launcher.logDetail("now = " + now + " midnight = " + midnight);
         var millisToMidnight = midnight.getTime() - now.getTime();
         var secondsToMidnight = millisToMidnight / 1000;
-        launcher.logDetail("schedule log rolling in " + secondsToMidnight + " seconds");
+        // launcher.logDetail("schedule log rolling in " + secondsToMidnight + " seconds");
         Main.scheduler.enter(secondsToMidnight, 1.0, doMidnightRollover);
     }
 
