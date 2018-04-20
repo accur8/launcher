@@ -410,9 +410,9 @@ typedef LaunchConfig = {
 }
 
 typedef JvmLaunchConfig = {
-    var groupId: String;
-    var artifactId: String;
-    var version: String;
+    // var groupId: String;
+    // var artifactId: String;
+    // var version: String;
     var mainClass: String;
     @:optional var jvmArgs: Array<String>;
     @:optional var args: Array<String>;

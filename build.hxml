@@ -4,4 +4,3 @@
 -lib tink_core
 -python target/path.py
 -debug
---macro a8.AddShebang.apply("target/path.py", "#!/usr/bin/env python3")

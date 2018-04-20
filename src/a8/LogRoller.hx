@@ -13,6 +13,13 @@ class LogRollerOps {
                 new UnknownLogRoller(c);
             }
     }
+    public static function scheduleAtMidnight(fn: Void->Void) {
+        var now = Date.now();
+        var midnight = DateOps.midnight();
+        var millisToMidnight = midnight.getTime() - now.getTime();
+        var secondsToMidnight = millisToMidnight / 1000;
+        Main.scheduler.enter(secondsToMidnight, 1.0, fn);
+    }
 }
 
 interface LogRoller {
@@ -38,13 +45,7 @@ class MidnightLogRoller extends AbstractLogRoller implements LogRoller {
     }
 
     function schedule() {
-        var now = Date.now();
-        var midnight = DateOps.midnight();
-        // launcher.logDetail("now = " + now + " midnight = " + midnight);
-        var millisToMidnight = midnight.getTime() - now.getTime();
-        var secondsToMidnight = millisToMidnight / 1000;
-        // launcher.logDetail("schedule log rolling in " + secondsToMidnight + " seconds");
-        Main.scheduler.enter(secondsToMidnight, 1.0, doMidnightRollover);
+        LogRollerOps.scheduleAtMidnight(doMidnightRollover);
     }
 
     function doMidnightRollover() {
@@ -74,5 +75,17 @@ class CullOldArchivesLogRoller extends AbstractLogRoller implements LogRoller {
 
     var config: Dynamic = _;
     var launcher: Launcher = _;
+
+    public function new(_) {
+    }    
+
+    override public function init(): Void {
+        Main.scheduler.enter(0, 1.0, cullOldLogs);
+        LogRollerOps.cullOldLogs();
+    }
+
+    function cullOldLogs() {
+        // read log files here
+    }
 
 }

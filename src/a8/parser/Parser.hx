@@ -28,11 +28,12 @@ abstract Tuple2<A,B>(Array<Any>) {
 
 }
 
+
+
 class ParserHelper {
 
     public static var SuccessParser: Parser<Void> = new SuccessParser();
     public static var EndOfInputParser: Parser<Void> = new EndOfInputParser();
-
 
 }
 
@@ -71,6 +72,10 @@ class ParserBuilder {
 
     public function str(s: String): Parser<String>  {
         return new StringParser(s);
+    }
+
+    public function charsWhile(fn: String->Bool): Parser<String> {
+        return new CharsWhileParser(fn);
     }
 
 }
@@ -281,6 +286,32 @@ class AndParser<A,B>
 
 }
 
+class CharsWhileParser
+    implements SnippetParser<String> 
+    implements ValueClass {
+
+    var whileFn: String->Bool;
+
+    public function parse(source: Source, pos: Position): ParseResult<String> {
+        var cont = true;
+        var index = pos.index;
+        while( cont && pos.index < source.value.length ) {
+            var ch = source.value.charAt(index);
+            cont = whileFn(ch);
+            if ( cont ) {
+                index += 1;
+            }
+        }
+        return 
+            if ( index != pos.index ) {
+                ParseSuccess(new Position(index), source.value.substring(pos.index, index));
+            } else {
+                ParseFailure(pos, "no chars match at " + pos);
+            }
+    }
+
+}
+
 class StringParser 
     implements SnippetParser<String> 
     implements ValueClass {
@@ -445,4 +476,8 @@ class EndOfInputParser<Void>
 
 }
 
+@:tink
+class ParserOps {
+    public static var digitsParser = new CharsWhileParser([ch]=>"0123456789".indexOf(ch) >= 0);
+}
 
