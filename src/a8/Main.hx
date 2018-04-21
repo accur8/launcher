@@ -39,7 +39,7 @@ class Main {
     }
 
 
-    public static function main(): Void {
+    static function loadConfig(): LaunchConfig {
 
         var execPath = PathOps.executablePath();
 
@@ -54,6 +54,37 @@ class Main {
         if ( config.logRollers == null ) {
             config.logRollers = [];
         }
+        if ( config.logFiles == null ) {
+            config.logFiles = true;
+        }
+        if ( config.kind == "jvm_cli") {
+            var jvmLaunchConfig: JvmLaunchConfig = cast config;
+            jvmLaunchConfig.webappExplode = false;
+            jvmLaunchConfig.libDirKind = "repo";
+            config.installDir = null;
+            config.logFiles = false;
+            config.logRollers = [];
+        }
+        if ( config.kind == "jvm" || config.kind == "jvm_cli") {
+            var jvmLaunchConfig: JvmLaunchConfig = cast config;
+            if ( jvmLaunchConfig.jvmArgs == null ) 
+                jvmLaunchConfig.jvmArgs = [];
+            if ( jvmLaunchConfig.args == null ) 
+                jvmLaunchConfig.args = [];
+
+        }
+
+        return config;
+
+    }
+
+    public static function main(): Void {
+
+        var execPath = PathOps.executablePath();
+
+        var appName = execPath.file;
+
+        var config = loadConfig();
 
         var launcher = 
             new Launcher(
@@ -87,7 +118,7 @@ class Launcher {
 
     @:lazy var installDir: Path = initDirectory(config.installDir, null, a8.PathOps.path(python.lib.Os.getcwd()));
     @:lazy var logsDir: Path = initDirectory(config.logsDir, "logs", installDir);
-    @:lazy var logArchivesDir: Path = initDirectory("archives", null, logsDir, true);
+    @:lazy var logArchivesDir: Path = initDirectory("archives", null, logsDir, this.config.logFiles);
 
     public var pipedStdout: PipedStream;
     public var pipedStderr: PipedStream;
@@ -113,11 +144,9 @@ class Launcher {
     }
 
     public function new(config: LaunchConfig, appName: String, timestampStr: String) {
-
         this.config = config;
         this.appName = appName;
         this.timestampStr = timestampStr;
-
     }
 
     public function logDetail(msg: String): Void {
@@ -162,7 +191,7 @@ class Launcher {
 
     }
 
-    public function archiveLogFiles(files: Array<Path>): Void {
+    function archiveLogFiles(files: Array<Path>): Void {
 
         var archivedFiles = 
             files
@@ -186,15 +215,18 @@ class Launcher {
     }
 
     function resolveStandardArgs(stdlauncher: ArgsLaunchConfig): ResolvedArgs {
+        var launchConfig: LaunchConfig = cast stdlauncher;
         return {
             args: stdlauncher.args,
             env: null,
             cwd: null,
-            executable: null
+            executable: null,
         };
     }
 
     function resolveJvmLaunchArgs(jvmlauncher: JvmLaunchConfig): ResolvedArgs {
+
+        var launchConfig: LaunchConfig = cast jvmlauncher;
 
         var installInventoryFile = installDir.entry("install-inventory.json");
 
@@ -262,8 +294,8 @@ class Launcher {
         return {
             args: args,
             env: newEnv,
-            cwd: installDir.realPathStr(),
-            executable: "./" + symlinkName
+            cwd: if ( jvmlauncher.kind == "jvm" ) installDir.realPathStr() else null,
+            executable: "./" + symlinkName,
         };
 
     }
@@ -275,10 +307,11 @@ class Launcher {
         logDetail("logsDir = " + logsDir);
         logDetail("logArchivesDir = " + logArchivesDir);
 
-        archiveOldLogs();
+        if ( config.logFiles )
+            archiveOldLogs();
 
         var popenArgs = 
-            if ( config.kind == "jvm" ) 
+            if ( config.kind == "jvm" || config.kind == "jvm_cli" ) 
                 resolveJvmLaunchArgs(cast config);
             else if ( config.kind == "args" ) 
                 resolveStandardArgs(cast config);
@@ -294,8 +327,8 @@ class Launcher {
         }
 
         logDetail("setting up pipes");
-        this.pipedStdout = new PipedStream(this, popen.stdout.asInputStream(), PySys.stdout, "details", firstIO);
-        this.pipedStderr = new PipedStream(this, popen.stderr.asInputStream(), PySys.stderr, "errors", firstIO);
+        this.pipedStdout = new PipedStream(this, popen.stdout.asInputStream(), PySys.stdout, "details", firstIO, config.logFiles);
+        this.pipedStderr = new PipedStream(this, popen.stderr.asInputStream(), PySys.stderr, "errors", firstIO, config.logFiles);
 
         this.pipedStdout.start();
         this.pipedStderr.start();
@@ -334,6 +367,7 @@ class PipedStream {
     var stdxxx: TextIOBase = _;
     var fileExtension: String = _;
     var firstIO: OutputStream->Void = _;
+    var pipeToLogFiles: Bool = _;
 
     var fileOutputPath: Path;
     var fileOut: OutputStream;
@@ -346,11 +380,16 @@ class PipedStream {
     public function start() {
         if ( !started ) {
             this.started = true;
-            this.fileOutputPath = outputFile(launcher.timestampStr);
-            this.fileOut = StreamOps.fileOutputStream(fileOutputPath.realPathStr());
-            this.teeOut = new TeeOutputStream([this.fileOut, stdxxx.asOutputStream()]);
-            this.pipe = new Pipe(processInput, teeOut, firstIO);
-            this.pipe.run();
+            if ( this.pipeToLogFiles ) {
+                this.fileOutputPath = outputFile(launcher.timestampStr);
+                this.fileOut = StreamOps.fileOutputStream(fileOutputPath.realPathStr());
+                this.teeOut = new TeeOutputStream([this.fileOut, stdxxx.asOutputStream()]);
+                this.pipe = new Pipe(processInput, teeOut, firstIO);
+                this.pipe.run();
+            } else {
+                this.pipe = new Pipe(processInput, stdxxx.asOutputStream(), firstIO);
+                this.pipe.run();                
+            }
         }
     }
 
@@ -407,20 +446,42 @@ typedef LaunchConfig = {
     @:optional var installDir: String;
     @:optional var logsDir: String;
     @:optional var logRollers: Array<Dynamic>;
+    @:optional var logFiles: Bool;
 }
 
+/*
+
+
+    when running standalone commands
+        no log files
+        do not set current working directory
+        installDir not required
+        kind = jvm_cli
+        webappExplode is ignored
+
+
+    when running app servers
+        log files
+        set current working directory to be the install Directory
+        installDir required
+        kind = jvm
+
+
+*/
+
+
 typedef JvmLaunchConfig = {
-    // var groupId: String;
-    // var artifactId: String;
-    // var version: String;
+    var kind: String;
+    var groupId: String;
+    var artifactId: String;
+    var version: String;
     var mainClass: String;
+    var branch: String;
     @:optional var jvmArgs: Array<String>;
     @:optional var args: Array<String>;
     @:optional var webappExplode: Bool;
     @:optional var libDirKind: String;
-    @:optional var branch: String;
 }
-
 
 typedef ArgsLaunchConfig = {
     var args: Array<String>;
@@ -439,6 +500,4 @@ typedef AppInstallerConfig = {
     var libDirKind: String;
     var webappExplode: Bool;
 }
-
-
 

@@ -81,7 +81,7 @@ class CullOldArchivesLogRoller extends AbstractLogRoller implements LogRoller {
 
     override public function init(): Void {
         Main.scheduler.enter(0, 1.0, cullOldLogs);
-        LogRollerOps.cullOldLogs();
+        cullOldLogs();
     }
 
     function cullOldLogs() {
