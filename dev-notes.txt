@@ -16,6 +16,9 @@
   * properly get symlink as the process name
 
 
+== code coolness ==
+  * StreamOps and PathOps working from macros (so can be put in import.hx)
+
 == features ==
 
     * early log file setup

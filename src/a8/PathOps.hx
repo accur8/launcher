@@ -10,6 +10,14 @@ import a8.PyOps;
 
 class PathOps {
 
+    public static function timestampStr(): String {
+        var now = Date.now();
+        function pad(i: Int): String {
+            return ("" + i).lpad("0", 2);
+        }
+        return now.getFullYear() + pad(now.getMonth()) + pad(now.getDate()) + "_" + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+    }
+
     public static function path(p: String): Path {
         return new Path(p);
     }
@@ -122,6 +130,10 @@ class PathOps {
     public static function entry(dir: Path, name: String): Path {
         var separator = if (dir.backslash) "" else "/";
         return new Path(dir.toString() + separator + name);
+    }
+
+    public static function outputStream(p: Path): a8.Streams.OutputStream {
+        return StreamOps.fileOutputStream(realPathStr(p));
     }
 
 }

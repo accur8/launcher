@@ -1,8 +1,9 @@
-package a8;
+package a8.launcher;
 
 
-import a8.Main;
+import a8.launcher.Main;
 import a8.DateOps;
+import a8.launcher.Launcher;
 
 class LogRollerOps {
     public static function fromConfig(c: Dynamic, launcher: Launcher): LogRoller {
@@ -18,7 +19,7 @@ class LogRollerOps {
         var midnight = DateOps.midnight();
         var millisToMidnight = midnight.getTime() - now.getTime();
         var secondsToMidnight = millisToMidnight / 1000;
-        Main.scheduler.enter(secondsToMidnight, 1.0, fn);
+        a8.GlobalScheduler.schedule(secondsToMidnight, fn);
     }
 }
 
@@ -50,7 +51,7 @@ class MidnightLogRoller extends AbstractLogRoller implements LogRoller {
 
     function doMidnightRollover() {
         launcher.logDetail("running doMidnightRollover");
-        var timestampStr = Main.timestampStr();
+        var timestampStr = PathOps.timestampStr();
         // we want the details and error files to have same timestamp
         launcher.pipedStderr.rollover(timestampStr);
         launcher.pipedStdout.rollover(timestampStr);
@@ -80,12 +81,13 @@ class CullOldArchivesLogRoller extends AbstractLogRoller implements LogRoller {
     }    
 
     override public function init(): Void {
-        Main.scheduler.enter(0, 1.0, cullOldLogs);
-        cullOldLogs();
+        a8.GlobalScheduler.submit(cullOldLogs);
     }
 
-    function cullOldLogs() {
+    function cullOldLogs(): Void {
         // read log files here
+        var fiveMinutes = 5 * 60;
+        a8.GlobalScheduler.schedule(fiveMinutes, cullOldLogs);
     }
 
 }

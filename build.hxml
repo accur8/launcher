@@ -1,7 +1,7 @@
--main a8.Main
+-main a8.launcher.Main
 -cp src
 -lib tink_lang
 -lib tink_core
--python target/path.py
+-python target/a8-launcher.py
 -debug
---macro a8.AddShebang.apply("target/path.py", "#!/usr/bin/env python")
+--macro a8.AddShebang.apply("target/a8-launcher.py", "#!/usr/bin/env python")

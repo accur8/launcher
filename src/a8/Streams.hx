@@ -7,7 +7,6 @@ import python.lib.io.FileIO;
 import python.lib.io.IOBase;
 import python.lib.Io;
 import python.lib.io.TextIOBase;
-import a8.ValueClass;
 import python.lib.threading.Thread;
 
 
@@ -24,9 +23,10 @@ interface InputStream {
 }
 
 
-class FileIOInputStream implements InputStream implements ValueClass {
+@:tink
+class FileIOInputStream implements InputStream {
 
-    var delegate: FileIO;
+    var delegate: FileIO = _;
 
     public function readLine(): String {
         var bytes: Bytes = cast delegate.readline();
@@ -47,9 +47,10 @@ class FileIOInputStream implements InputStream implements ValueClass {
 }
 
 
-class TextIOBaseOutputStream implements OutputStream implements ValueClass {
+@:tink
+class TextIOBaseOutputStream implements OutputStream {
 
-    var delegate: TextIOBase;
+    var delegate: TextIOBase = _;
 
     public function write(s: String): Void {
         delegate.write(s);
@@ -66,9 +67,10 @@ class TextIOBaseOutputStream implements OutputStream implements ValueClass {
 }
 
 
-class FileIOOutputStream implements OutputStream implements ValueClass {
+@:tink
+class FileIOOutputStream implements OutputStream {
 
-    var delegate: FileIO;
+    var delegate: FileIO = _;
 
     public function write(s: String): Void {
         delegate.write(new Bytes(s,"utrf-8"));
@@ -85,9 +87,10 @@ class FileIOOutputStream implements OutputStream implements ValueClass {
 }
 
 
-class TeeOutputStream implements ValueClass implements OutputStream {
+@:tink
+class TeeOutputStream implements OutputStream {
 
-    var outputs: Array<OutputStream>;
+    var outputs: Array<OutputStream> = _;
 
     public function write(s: String): Void {
         outputs.iter(function (os) {
