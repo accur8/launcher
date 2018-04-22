@@ -10,6 +10,8 @@ import a8.PyOps;
 
 class PathOps {
 
+
+
     public static function timestampStr(): String {
         var now = Date.now();
         function pad(i: Int): String {
@@ -28,6 +30,10 @@ class PathOps {
       */
     public static function executablePath(): Path {
         return new Path(python.lib.Sys.argv[0]);
+    }
+
+    public static function userHome(): Path {
+        return new Path(python.lib.Os.environ.get("HOME"));
     }
 
     /** 
@@ -87,11 +93,14 @@ class PathOps {
     public static function entries(parentDir: Path): Array<Path> {
         var sep = if ( parentDir.backslash ) "" else "/";
         return 
-            Os
-                .listdir(realPathStr(parentDir))
-                .map(function(e) {
-                    return new Path(parentDir.toString() + sep + e);
-                });
+            if ( exists(parentDir) ) 
+                Os
+                    .listdir(realPathStr(parentDir))
+                    .map(function(e) {
+                        return new Path(parentDir.toString() + sep + e);
+                    });
+            else
+                [];
     }
 
     public static function isFile(path: Path): Bool {

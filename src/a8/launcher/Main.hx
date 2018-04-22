@@ -54,11 +54,7 @@ class Main {
 
     public static function main(): Void {
 
-        var foo = Some(1);
-
-        var a0 = foo.map([i] => i + 1);
-        var a1 = foo.filter([i] => i == 3);
-        var a2 = foo.flatMap([i] => foo.filter([j] => i == j));
+        trace("started");
 
         var execPath = PathOps.executablePath();
 
@@ -111,11 +107,20 @@ typedef LaunchConfig = {
 
 typedef JvmLaunchConfig = {
     var kind: String;
-    var groupId: String;
-    var artifactId: String;
-    var version: String;
     var mainClass: String;
-    var branch: String;
+    @:optional var jvmArgs: Array<String>;
+    @:optional var args: Array<String>;
+    @:optional var webappExplode: Bool;
+    @:optional var libDirKind: String;
+}
+
+typedef JvmCliLaunchConfig = {
+    var kind: String;
+    var organization: String;
+    var artifact: String;
+    @:optional var version: String;
+    @:optional var branch: String;
+    var mainClass: String;
     @:optional var jvmArgs: Array<String>;
     @:optional var args: Array<String>;
     @:optional var webappExplode: Bool;

@@ -4,4 +4,4 @@
 -lib tink_core
 -python target/a8-launcher.py
 -debug
---macro a8.AddShebang.apply("target/a8-launcher.py", "#!/usr/bin/env python")
+--macro a8.AddShebang.apply("target/a8-launcher.py", "#!/usr/bin/env python3")
