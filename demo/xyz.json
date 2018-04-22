@@ -1,0 +1,8 @@
+{
+  "kind": "jvm_cli",
+  "mainClass": "com.ahsrcm.mobidash.RunBaseQubes",
+  "organization": "a8",
+  "artifact": "a8-qubes-dist_2.12",
+  "branch": "master",
+  "logRollers": ["midnight"]
+}
