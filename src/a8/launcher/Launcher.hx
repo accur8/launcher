@@ -100,7 +100,7 @@ class Launcher {
             files
                 .map([f] => {
                     var target = logArchivesDir.entry(f.basename());
-                    target.delete();
+                    target.deleteFile();
                     f.moveTo(target);
                     target;
                 });
@@ -140,12 +140,20 @@ class Launcher {
         var inventoryFile = a8VersionsCache.entry(jvmlauncher.organization + "/" + jvmlauncher.artifact + "/" + versionFile);
         trace(inventoryFile.toString());
         if ( !inventoryFile.exists() ) {
-            throw "run a8-versions resolve here";
+            var args = ["a8-versions", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
+            if ( jvmlauncher.branch != null ) {
+                args.push("--branch");
+                args.push(jvmlauncher.branch);
+            } else if ( jvmlauncher.version != null ) {
+                args.push("--version");
+                args.push(jvmlauncher.version);
+            }            
+            python.lib.Subprocess.call(args);
         }
-        return resolveJvmLaunchArgs(jvmlauncher, inventoryFile);
+        return resolveJvmLaunchArgs(jvmlauncher, inventoryFile, false);
     }
 
-    function resolveJvmLaunchArgs(jvmlauncher: JvmLaunchConfig, installInventoryFile: Path): ResolvedLaunch {
+    function resolveJvmLaunchArgs(jvmlauncher: JvmLaunchConfig, installInventoryFile: Path, createAppNameSymlink: Bool): ResolvedLaunch {
 
         var launchConfig: LaunchConfig = cast jvmlauncher;
 
@@ -163,25 +171,28 @@ class Launcher {
 
         var args = new Array<String>();
 
-        var symlinkName = "j_" + appName;
-        var symlinkParent = installDir;
-        var javaAppNameSymLink = symlinkParent.realPathStr() + "/" + symlinkName;
-        var javaAppNameSymLinkPath = PathOps.path(javaAppNameSymLink);
-        var cmd = 
-            if ( !javaAppNameSymLinkPath.isFile() ) {
-                var javaExec = PyShutil2.which("java");
-                trace("creating symlink " + javaExec + " --> " + javaAppNameSymLink);
-                PyOs2.symlink(javaExec, javaAppNameSymLink);
-                if ( javaAppNameSymLinkPath.isFile() ) {
-                    "./" + symlinkName;
+        if ( createAppNameSymlink ) {
+            var symlinkName = "j_" + appName;
+            var symlinkParent = installDir;
+            var javaAppNameSymLink = symlinkParent.realPathStr() + "/" + symlinkName;
+            var javaAppNameSymLinkPath = PathOps.path(javaAppNameSymLink);
+            var cmd = 
+                if ( !javaAppNameSymLinkPath.isFile() ) {
+                    var javaExec = PyShutil2.which("java");
+                    trace("creating symlink " + javaExec + " --> " + javaAppNameSymLink);
+                    PyOs2.symlink(javaExec, javaAppNameSymLink);
+                    if ( javaAppNameSymLinkPath.isFile() ) {
+                        "./" + symlinkName;
+                    } else {
+                        "java";
+                    }
                 } else {
-                    "java";
+                    "./" + symlinkName;
                 }
-            } else {
-                "./" + symlinkName;
-            }
-
-        args.push(cmd);
+            args.push(cmd);
+        } else {
+            args.push("java");
+        }
 
         args.push("-DappName=" + appName);
 
@@ -215,7 +226,7 @@ class Launcher {
             args: args,
             env: newEnv,
             cwd: if ( jvmlauncher.kind == "jvm" ) installDir.realPathStr() else null,
-            executable: "./" + symlinkName,
+            executable: args[0],
         };
 
     }
@@ -233,7 +244,7 @@ class Launcher {
         var resolvedLaunch: ResolvedLaunch = 
             if ( config.kind == "jvm" ) {
                 var installInventoryFile = installDir.entry("install-inventory.json");
-                resolveJvmLaunchArgs(cast config, installInventoryFile);
+                resolveJvmLaunchArgs(cast config, installInventoryFile, true);
             } else if ( config.kind == "jvm_cli" ) {
                 resolveJvmCliLaunchArgs(cast config);
             } else if ( config.kind == "args" )

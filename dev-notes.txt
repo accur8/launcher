@@ -8,16 +8,20 @@
 
 == launcher actions ==
 
-  * do we integrate with the installer ?
-    * (install | upgrade) to a (version | latest)
-      * make sure we have the artifacts locally 
-        * use a8 repo
-    * unpackge the app
-  * properly get symlink as the process name
+  * make sure the processname uses the symlink name
+
+  * handle manually passed in --version
+  * add --versions-version support
+
+  * how do we trigger an update (if latest)
 
 
 == code coolness ==
+
   * StreamOps and PathOps working from macros (so can be put in import.hx)
+
+  * switch to using Input and Output for the file streaming parts
+
 
 == features ==
 

@@ -8,7 +8,7 @@ import python.lib.io.IOBase;
 import python.lib.Io;
 import python.lib.io.TextIOBase;
 import python.lib.threading.Thread;
-
+import a8.Platform;
 
 interface OutputStream {
     function write(s: String): Void;
@@ -90,7 +90,11 @@ class FileIOOutputStream implements OutputStream {
 @:tink
 class TeeOutputStream implements OutputStream {
 
-    var outputs: Array<OutputStream> = _;
+    var outputs: Array<OutputStream>;
+
+    public function new(outputs: Array<OutputStream>) {
+        this.outputs = outputs;
+    }
 
     public function write(s: String): Void {
         outputs.iter(function (os) {
@@ -131,7 +135,10 @@ class Pipe {
         this.byteCount = 0;
     }
 
-    public function run(): Thread {
+    /**
+     *  run the pipe in a separate thread
+     */
+    public function run(): Void {
 
         function impl() {
             var first = true;
@@ -158,10 +165,7 @@ class Pipe {
             output.close();
         }
 
-        var th = new Thread({target:impl});
-        th.start();
-
-        return th;
+        a8.PlatformOps.instance.spawn("pipe", impl);
 
     }
 

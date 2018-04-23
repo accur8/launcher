@@ -5,12 +5,9 @@ import haxe.io.Path;
 import haxe.io.Bytes;
 import sys.io.File;
 import sys.FileSystem;
-import python.lib.Os;
-import a8.PyOps;
+import a8.Platform;
 
 class PathOps {
-
-
 
     public static function timestampStr(): String {
         var now = Date.now();
@@ -29,11 +26,11 @@ class PathOps {
       *  i.e. without symlinks resolved.
       */
     public static function executablePath(): Path {
-        return new Path(python.lib.Sys.argv[0]);
+        return a8.PlatformOps.instance.executablePath();
     }
 
     public static function userHome(): Path {
-        return new Path(python.lib.Os.environ.get("HOME"));
+        return new Path(Sys.environment().get("HOME"));
     }
 
     /** 
@@ -49,7 +46,7 @@ class PathOps {
     }
 
     public static function makeDirectories(path: Path): Void {
-        Os.makedirs(path.toString());
+        sys.FileSystem.createDirectory(path.toString());
     }
 
     public static function readBytes(path: Path): Bytes {
@@ -81,12 +78,12 @@ class PathOps {
     }
 
     public static function moveTo(source: Path, target: Path): Void {
-        PyShutil2.move(source.toString(), target.toString());
+        a8.PlatformOps.instance.moveTo(source, target);
     }
 
-    public static function delete(source: Path): Void {
+    public static function deleteFile(source: Path): Void {
         if ( exists(source) ) {
-            Os.remove(source.toString());
+            sys.FileSystem.deleteFile(source.toString());
         }
     }
 
@@ -94,8 +91,8 @@ class PathOps {
         var sep = if ( parentDir.backslash ) "" else "/";
         return 
             if ( exists(parentDir) ) 
-                Os
-                    .listdir(realPathStr(parentDir))
+                sys.FileSystem
+                    .readDirectory(realPathStr(parentDir))
                     .map(function(e) {
                         return new Path(parentDir.toString() + sep + e);
                     });
@@ -104,15 +101,15 @@ class PathOps {
     }
 
     public static function isFile(path: Path): Bool {
-        return python.lib.os.Path.isfile(path.toString());
+        return PlatformOps.instance.isFile(path);
     }
 
     public static function isDir(path: Path): Bool {
-        return python.lib.os.Path.isdir(path.toString());
+        return sys.FileSystem.isDirectory(path.toString());
     }
 
     public static function realPathStr(path: Path): String {
-        return python.lib.os.Path.realpath(path.toString());
+        return sys.FileSystem.fullPath(path.toString());
     }
 
     public static function writeBytes(path: Path, bytes: Bytes): Void {
@@ -146,3 +143,8 @@ class PathOps {
     }
 
 }
+
+
+
+
+

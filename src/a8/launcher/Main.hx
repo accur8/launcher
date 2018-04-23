@@ -10,7 +10,6 @@ import haxe.Json;
 import a8.PyOps;
 using a8.PathOps;
 
-@:tink
 class Main {
 
     static function loadConfig(): LaunchConfig {
@@ -54,6 +53,7 @@ class Main {
 
     public static function main(): Void {
 
+        trace("" + Sys.args());
         trace("started");
 
         var execPath = PathOps.executablePath();
