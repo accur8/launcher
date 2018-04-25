@@ -10,6 +10,7 @@ import haxe.Json;
 import a8.PyOps;
 using a8.PathOps;
 
+@:tink
 class Main {
 
     static function loadConfig(): LaunchConfig {
@@ -32,8 +33,6 @@ class Main {
         }
         if ( config.kind == "jvm_cli") {
             var jvmLaunchConfig: JvmLaunchConfig = cast config;
-            jvmLaunchConfig.webappExplode = false;
-            jvmLaunchConfig.libDirKind = "repo";
             config.installDir = null;
             config.logFiles = false;
             config.logRollers = [];
@@ -53,22 +52,30 @@ class Main {
 
     public static function main(): Void {
 
-        trace("" + Sys.args());
-        trace("started");
+        try {
 
-        var execPath = PathOps.executablePath();
+            var execPath = PathOps.executablePath();
 
-        var appName = execPath.file;
+            var appName = execPath.file;
 
-        var config = loadConfig();
+            var config = loadConfig();
 
-        var launcher = 
-            new Launcher(
-                config,
-                appName
-            );
+            var launcher = 
+                new Launcher(
+                    config,
+                    appName
+                );
 
-        launcher.runAndWait();
+            launcher.runAndWait();
+        } catch (e: Dynamic) {
+            trace("ERROR - " + e);
+            haxe.CallStack.callStack().iter([si]=>{
+                trace("   " + si);
+            });
+            Sys.exit(1);
+        }
+
+        Sys.exit(0);
 
     }
 
@@ -106,16 +113,14 @@ typedef LaunchConfig = {
 
 
 typedef JvmLaunchConfig = {
-    var kind: String;
+    // var kind: String;
     var mainClass: String;
     @:optional var jvmArgs: Array<String>;
     @:optional var args: Array<String>;
-    @:optional var webappExplode: Bool;
-    @:optional var libDirKind: String;
 }
 
 typedef JvmCliLaunchConfig = {
-    var kind: String;
+    // var kind: String;
     var organization: String;
     var artifact: String;
     @:optional var version: String;
@@ -123,8 +128,6 @@ typedef JvmCliLaunchConfig = {
     var mainClass: String;
     @:optional var jvmArgs: Array<String>;
     @:optional var args: Array<String>;
-    @:optional var webappExplode: Bool;
-    @:optional var libDirKind: String;
 }
 
 typedef ArgsLaunchConfig = {

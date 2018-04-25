@@ -10,7 +10,7 @@ using a8.OptionOps;
 
 @:tink
 class PipedStream {
-    
+
     var launcher: Launcher = _;
     var processInput: InputStream = _;
     var stdxxx: TextIOBase = _;

@@ -38,6 +38,14 @@ class OptionOps {
             }
     }
 
+    public static function getOrElseFn<A>(o: Option<A>, def: Void->A): A {
+        return 
+            switch o {
+                case Some(i): i;
+                case None: def();
+            }
+    }
+
     public static function get<A>(o: Option<A>, def: A): A {
         return getOrError(o, "expected a Some");
     }

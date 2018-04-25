@@ -140,20 +140,31 @@ class Launcher {
         var inventoryFile = a8VersionsCache.entry(jvmlauncher.organization + "/" + jvmlauncher.artifact + "/" + versionFile);
         trace(inventoryFile.toString());
         if ( !inventoryFile.exists() ) {
-            var args = ["a8-versions", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
+            var exec = new a8.Exec();
+            var args = exec.args = ["a8-versions", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
             if ( jvmlauncher.branch != null ) {
                 args.push("--branch");
                 args.push(jvmlauncher.branch);
             } else if ( jvmlauncher.version != null ) {
                 args.push("--version");
                 args.push(jvmlauncher.version);
-            }            
-            python.lib.Subprocess.call(args);
+            }
+            exec.execInline();
         }
-        return resolveJvmLaunchArgs(jvmlauncher, inventoryFile, false);
+        var la = resolveJvmLaunchArgs(jvmlauncher, inventoryFile, false);
+
+        la.kind = "exec";
+        la.cwd = null;
+
+        return la;
+
     }
 
     function resolveJvmLaunchArgs(jvmlauncher: JvmLaunchConfig, installInventoryFile: Path, createAppNameSymlink: Bool): ResolvedLaunch {
+
+        if ( !installInventoryFile.exists() ) {
+            throw "inventory file does not exist " + installInventoryFile.toString();
+        }
 
         var launchConfig: LaunchConfig = cast jvmlauncher;
 
@@ -222,10 +233,10 @@ class Launcher {
         newEnv.set("LAUNCHER_EXEC_PATH", PathOps.executablePath().realPathStr());
 
         return {
-            kind: if ( jvmlauncher.kind == "jvm" ) "popen" else "exec",
+            kind: "popen",
             args: args,
             env: newEnv,
-            cwd: if ( jvmlauncher.kind == "jvm" ) installDir.realPathStr() else null,
+            cwd: installDir.realPathStr(),
             executable: args[0],
         };
 

@@ -4,7 +4,6 @@ package a8;
 import python.lib.threading.Thread;
 
 
-
 @:pythonImport("shutil")
 extern class PyShutil2 {
 
@@ -45,11 +44,21 @@ extern class PyEvent {
 }
 
 
+@:tink
 class PyOps {
+
+    public static function toDict<A,B>(map: Map<A,B>): python.Dict<A,B> {
+        var dict = new python.Dict();
+        for ( k in map.keys()) {
+            dict.set(k, map.get(k));
+        }
+        return dict;
+    }
 
     public static function spawn(fn: Void->Void): Thread {
 
         var th = new Thread({target:fn});
+        th.daemon = true;
         th.start();
 
         return th;

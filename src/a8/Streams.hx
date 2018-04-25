@@ -68,12 +68,31 @@ class TextIOBaseOutputStream implements OutputStream {
 
 
 @:tink
+class OutputOutputStream implements OutputStream {
+
+    var delegate: haxe.io.Output = _;
+
+    public function write(s: String): Void {
+        delegate.writeString(s);
+    }
+
+    public function flush(): Void {
+        delegate.flush();
+    }
+
+    public function close(): Void {
+        delegate.close();
+    }
+
+}
+
+@:tink
 class FileIOOutputStream implements OutputStream {
 
     var delegate: FileIO = _;
 
     public function write(s: String): Void {
-        delegate.write(new Bytes(s,"utrf-8"));
+        delegate.write(new Bytes(s,"utf-8"));
     }
 
     public function flush(): Void {

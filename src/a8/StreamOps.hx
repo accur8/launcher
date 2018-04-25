@@ -22,3 +22,11 @@ class StreamOps {
 
 }
 
+class StreamOps2 {
+
+    public static function asOutputStream(output: haxe.io.Output): OutputStream {
+        return new OutputOutputStream(output);
+    }
+
+}
+
