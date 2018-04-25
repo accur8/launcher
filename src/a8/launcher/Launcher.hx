@@ -22,6 +22,8 @@ class Launcher {
     var config: LaunchConfig = _;
     public var appName: String = _;
 
+    public var args: Array<String> = _;
+
     @:lazy var a8VersionsCache: Path = initDirectory(".a8/versions/cache", null, a8.PathOps.userHome());
 
 
@@ -220,6 +222,10 @@ class Launcher {
             jvmlauncher.args.iter(function(arg) {
                 args.push(arg);
             });
+
+        this.args.iter(function(arg) {
+            args.push(arg);
+        });
 
         var env = python.lib.Os.environ;
 

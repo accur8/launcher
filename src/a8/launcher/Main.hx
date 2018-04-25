@@ -4,11 +4,10 @@ package a8.launcher;
 import sys.FileSystem;
 import a8.Streams;
 
-using Lambda;
-
 import haxe.Json;
 import a8.PyOps;
-using a8.PathOps;
+import python.Lib;
+
 
 @:tink
 class Main {
@@ -60,10 +59,14 @@ class Main {
 
             var config = loadConfig();
 
+            var args = PySys.argv.copy();
+            args.shift();
+
             var launcher = 
                 new Launcher(
                     config,
-                    appName
+                    appName,
+                    args
                 );
 
             launcher.runAndWait();
