@@ -28,7 +28,7 @@ class Exec {
       *. stdin, stdout and stderr 
       */
     public function execInline(): Int {
-        // trace("exec " + args);
+        Logger.trace('running -- ${asCommandLine()}');
         var exitCode = 
             python.lib.Subprocess.call(
                 args,
@@ -46,7 +46,7 @@ class Exec {
       *  Will run the process waiting til completion capturing stdout and stderr to separate strings
       */
     public function execCapture(): ExecCaptureResult {
-
+        Logger.trace('running -- ${asCommandLine()}');
         var popen = 
             new python.lib.subprocess.Popen(
                 args, 

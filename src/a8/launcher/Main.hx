@@ -65,6 +65,8 @@ class Main {
             var clp = new CommandLineProcessor();
             var config = clp.apply(initialConfig);
 
+            Logger.traceEnabled = !config.quiet;
+
             var launcher = 
                 new Launcher(
                     config,

@@ -20,7 +20,7 @@ class CommandLineProcessor {
                 config.quiet = args.isEmpty();
             }
         },{ 
-            name: "--l-resolve", 
+            name: "--l-resolveOnly", 
             parmCount: 0,
             apply: function(config: LaunchConfig, args: Option<String>) {
                 config.resolveOnly = args.nonEmpty();
@@ -39,12 +39,16 @@ class CommandLineProcessor {
         var temp = initialConfig.rawCommandLineArgs.copy();
 
         // drop the first arg since it is the program name
+        temp.reverse();
         temp.pop();
 
         while ( temp.length > 0 ) {
             var a = temp.pop();
             var argDef: ProgramArg = argDefs.find([ad] => ad.name == a);
             if ( argDef == null ) {
+                if ( a.startsWith("--l-") ) {
+                    throw new Exception('don\'t know how to handle arg -- ${a}');
+                }
                 newArgs.push(a);
             } else {
                 var parms = 

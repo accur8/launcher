@@ -140,13 +140,15 @@ class Launcher {
             } else {
                 throw "must provide a config with branch or version";
             }
-        Logger.trace("using inventory file - " + versionFile + "!");
         var inventoryFile = a8VersionsCache.entry(jvmlauncher.organization + "/" + jvmlauncher.artifact + "/" + versionFile);
         Logger.trace("using inventory file - " + inventoryFile.toString());
         if ( !inventoryFile.exists() || this.config.resolveOnly ) {
             var exec = new a8.Exec();
             var args = exec.args = [PathOps.programPath().parent() + "/a8-versions", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
-            if ( jvmlauncher.branch != null ) {
+            if ( this.config.explicitVersion.nonEmpty() ) {
+                args.push("--version");
+                args.push(this.config.explicitVersion.get(""));
+            } else if ( jvmlauncher.branch != null ) {
                 args.push("--branch");
                 args.push(jvmlauncher.branch);
             } else if ( jvmlauncher.version != null ) {
@@ -257,21 +259,22 @@ class Launcher {
         logTrace("logsDir = " + logsDir);
         logTrace("logArchivesDir = " + logArchivesDir);
 
+        var resolvedLaunch: ResolvedLaunch = 
+            if ( config.kind == "jvm" ) {
+                var installInventoryFile = installDir.entry("install-inventory.json");
+                resolveJvmLaunchArgs(cast config, installInventoryFile, true);
+            } else if ( config.kind == "jvm_cli" ) {
+                resolveJvmCliLaunchArgs(cast config);
+            } else if ( config.kind == "args" )
+                resolveStandardArgs(cast config);
+            else 
+                throw "unable to resolve config kind " + config.kind;
+            
         if ( !this.config.resolveOnly ) {
 
             if ( config.logFiles )
                 archiveOldLogs();
 
-            var resolvedLaunch: ResolvedLaunch = 
-                if ( config.kind == "jvm" ) {
-                    var installInventoryFile = installDir.entry("install-inventory.json");
-                    resolveJvmLaunchArgs(cast config, installInventoryFile, true);
-                } else if ( config.kind == "jvm_cli" ) {
-                    resolveJvmCliLaunchArgs(cast config);
-                } else if ( config.kind == "args" )
-                    resolveStandardArgs(cast config);
-                else 
-                    throw "unable to resolve config kind " + config.kind;
 
             switch resolvedLaunch.kind {
                 case "exec": 

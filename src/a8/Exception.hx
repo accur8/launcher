@@ -2,7 +2,7 @@ package a8;
 
 
 
-
+import haxe.PosInfos;
 
 class Exception {
 
@@ -20,10 +20,11 @@ class Exception {
 
     public function toString(): String {
         return 
-            posInfos.fileName + ":" + posInfos.lineNumber + " " + message + 
-            
-                Logger.warn("" + e + "\n" + stack.asString("    "));
-                Sys.exit(1);
+            posInfos.fileName + ":" 
+                + posInfos.lineNumber + " " 
+                + message + "\n" 
+                + callStack.asString("    ")
+            ;
     }
 
     public function rethrow(context: String, ?posInfos: PosInfos): Void {
