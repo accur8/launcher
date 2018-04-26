@@ -63,7 +63,7 @@ class PipedStream {
                     of.teedOut.write(msg);
                     of.teedOut.write("\n");
                 } catch(e: Dynamic) {
-                    trace("error logging - " + e);
+                    Logger.warn("error logging - " + e);
                 }
             default:
         } 

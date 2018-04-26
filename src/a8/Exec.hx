@@ -28,7 +28,8 @@ class Exec {
       *. stdin, stdout and stderr 
       */
     public function execInline(): Int {
-         var exitCode = 
+        // trace("exec " + args);
+        var exitCode = 
             python.lib.Subprocess.call(
                 args,
                 {
@@ -36,7 +37,7 @@ class Exec {
                 }
             );
         if ( exitCode != 0 && failOnNonZeroExitCode ) {
-            throw "non-zero exit code of ${exitCode} while executing -- ${asCommandLine}";
+            throw 'non-zero exit code of ${exitCode} while executing -- ${asCommandLine()}';
         }
         return exitCode;
     }
@@ -84,7 +85,7 @@ class Exec {
                 stdout: stdoutCapture.getBytes().asString(),
             }
 
-        trace("" + result.exitCode);
+        Logger.trace("" + result.exitCode);
         if ( result.exitCode != 0 && failOnNonZeroExitCode ) {
             throw result;
         }

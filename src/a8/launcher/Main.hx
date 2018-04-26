@@ -7,7 +7,7 @@ import a8.Streams;
 import haxe.Json;
 import a8.PyOps;
 import python.Lib;
-
+import a8.launcher.CommandLineProcessor;
 
 @:tink
 class Main {
@@ -57,10 +57,13 @@ class Main {
 
             var appName = execPath.file;
 
-            var config = loadConfig();
+            var initialConfig = loadConfig();
 
             var args = PySys.argv.copy();
-            args.shift();
+            initialConfig.rawCommandLineArgs = args;
+
+            var clp = new CommandLineProcessor();
+            var config = clp.apply(initialConfig);
 
             var launcher = 
                 new Launcher(
@@ -71,10 +74,8 @@ class Main {
 
             launcher.runAndWait();
         } catch (e: Dynamic) {
-            trace("ERROR - " + e);
-            haxe.CallStack.callStack().iter([si]=>{
-                trace("   " + si);
-            });
+            var stack = haxe.CallStack.exceptionStack();
+            Logger.warn("" + e + "\n" + stack.asString("    "));
             Sys.exit(1);
         }
 
@@ -92,6 +93,19 @@ typedef LaunchConfig = {
     @:optional var logsDir: String;
     @:optional var logRollers: Array<Dynamic>;
     @:optional var logFiles: Bool;
+    @:optional var resolveOnly: Bool;
+
+    /* all items below are not loaded from the json */
+
+    /* ability to explicitly set the version that will run */
+    @:optional var explicitVersion: Option<String>;
+
+    /* the command line args with the launcher args are removed */
+    @:optional var resolvedCommandLineArgs: Array<String>;
+
+    /* the command line args before the launcher args are removed */
+    @:optional var rawCommandLineArgs: Array<String>;
+
 }
 
 /*

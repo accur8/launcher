@@ -50,13 +50,13 @@ class MidnightLogRoller extends AbstractLogRoller implements LogRoller {
     }
 
     function doMidnightRollover() {
-        launcher.logDetail("running doMidnightRollover");
+        launcher.logTrace("running doMidnightRollover");
         var timestampStr = PathOps.timestampStr();
         // we want the details and error files to have same timestamp
         launcher.pipedStderr.rollover(timestampStr);
         launcher.pipedStdout.rollover(timestampStr);
         schedule();
-        launcher.logDetail("doMidnightRollover complete");
+        launcher.logTrace("doMidnightRollover complete");
     }
 
 }

@@ -11,10 +11,7 @@ import haxe.Json;
 import python.lib.subprocess.Popen;
 import python.lib.Subprocess;
 import python.Lib.PySys;
-
-using a8.PathOps;
-using a8.StreamOps;
-
+import haxe.ds.Option;
 
 @:tink
 class Launcher {
@@ -22,7 +19,8 @@ class Launcher {
     var config: LaunchConfig = _;
     public var appName: String = _;
 
-    public var args: Array<String> = _;
+    var initialArgs: Array<String> = _;
+
 
     @:lazy var a8VersionsCache: Path = initDirectory(".a8/versions/cache", null, a8.PathOps.userHome());
 
@@ -35,7 +33,9 @@ class Launcher {
     public var pipedStderr: PipedStream;
     var logRollers: Array<LogRoller>;
 
+
     static function initDirectory(configEntry: String, secondEntry: String, basePath: Path, ?makeDirectory: Bool): Path {
+
         var entry = if ( configEntry != null ) configEntry else secondEntry;
         var d: Path = 
             if ( entry == null ) {
@@ -54,26 +54,25 @@ class Launcher {
         return d;
     }
 
-    public function logDetail(msg: String): Void {
+    public function logTrace(msg: String, ?posInfo: haxe.PosInfos): Void {
         if ( !config.quiet ) {
-            _log(msg, pipedStdout);
+            if ( pipedStdout != null ) {
+                pipedStdout.log("TRACE - " + msg);
+            } else {
+                Logger.trace(msg, posInfo);
+            }
         }
     }
     
-    function logError(msg: String): Void {
-        _log("ERROR - " + msg, pipedStderr);
-    }
-    
-    function logWarn(msg: String): Void {
-        _log("WARN - " + msg, pipedStderr);
+    function logWarn(msg: String, ?posInfo: haxe.PosInfos): Void {
+        if ( pipedStderr != null ) {
+            pipedStderr.log("WARN - " + msg);
+        } else {
+            Logger.warn(msg, posInfo);
+        }
     }
 
     private function _log(msg: String, pipe: PipedStream): Void {
-        if ( pipe != null ) {
-            pipe.log(msg);
-        } else {
-            trace(msg);
-        }
     }
 
     function archiveOldLogs(): Void {
@@ -107,7 +106,7 @@ class Launcher {
                     target;
                 });
 
-        trace("archiving log files -- " + archivedFiles);
+        logTrace("archiving log files -- " + archivedFiles);
 
         function gzipFiles() {
             archivedFiles.iter(function(f) {
@@ -132,18 +131,21 @@ class Launcher {
 
     function resolveJvmCliLaunchArgs(jvmlauncher: JvmCliLaunchConfig): ResolvedLaunch {
         var versionFile = 
-            if ( jvmlauncher.branch != null ) {
+            if ( this.config.explicitVersion.nonEmpty() ) {
+                this.config.explicitVersion.getOrError("") + ".json";
+            } else if ( jvmlauncher.branch != null ) {
                 "latest_" + jvmlauncher.branch + ".json";
             } else if ( jvmlauncher.version != null ) {
                 jvmlauncher.version + ".json";
             } else {
                 throw "must provide a config with branch or version";
             }
+        Logger.trace("using inventory file - " + versionFile + "!");
         var inventoryFile = a8VersionsCache.entry(jvmlauncher.organization + "/" + jvmlauncher.artifact + "/" + versionFile);
-        trace(inventoryFile.toString());
-        if ( !inventoryFile.exists() ) {
+        Logger.trace("using inventory file - " + inventoryFile.toString());
+        if ( !inventoryFile.exists() || this.config.resolveOnly ) {
             var exec = new a8.Exec();
-            var args = exec.args = ["a8-versions", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
+            var args = exec.args = [PathOps.programPath().parent() + "/a8-versions", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
             if ( jvmlauncher.branch != null ) {
                 args.push("--branch");
                 args.push(jvmlauncher.branch);
@@ -192,7 +194,7 @@ class Launcher {
             var cmd = 
                 if ( !javaAppNameSymLinkPath.isFile() ) {
                     var javaExec = PyShutil2.which("java");
-                    trace("creating symlink " + javaExec + " --> " + javaAppNameSymLink);
+                    Logger.trace("creating symlink " + javaExec + " --> " + javaAppNameSymLink);
                     PyOs2.symlink(javaExec, javaAppNameSymLink);
                     if ( javaAppNameSymLinkPath.isFile() ) {
                         "./" + symlinkName;
@@ -214,7 +216,7 @@ class Launcher {
                 args.push(jvmArg);
             });
 
-        // trace(classpath);
+        // logTrace(classpath);
 
         args.push(jvmlauncher.mainClass);
 
@@ -223,7 +225,7 @@ class Launcher {
                 args.push(arg);
             });
 
-        this.args.iter(function(arg) {
+        this.config.resolvedCommandLineArgs.iter(function(arg) {
             args.push(arg);
         });
 
@@ -231,7 +233,7 @@ class Launcher {
 
         var newEnv = env.copy();
 
-        // trace('set -x CLASSPATH "' + classpath + '"');
+        // logTrace('set -x CLASSPATH "' + classpath + '"');
 
         newEnv.set("CLASSPATH", classpath);
         newEnv.set("LAUNCHER_INSTALL_DIR", installDir.realPathStr());
@@ -251,64 +253,67 @@ class Launcher {
 
     public function runAndWait(): Void {
 
-        logDetail("installDir = " + installDir);
-        logDetail("logsDir = " + logsDir);
-        logDetail("logArchivesDir = " + logArchivesDir);
+        logTrace("installDir = " + installDir);
+        logTrace("logsDir = " + logsDir);
+        logTrace("logArchivesDir = " + logArchivesDir);
 
-        if ( config.logFiles )
-            archiveOldLogs();
+        if ( !this.config.resolveOnly ) {
 
-        var resolvedLaunch: ResolvedLaunch = 
-            if ( config.kind == "jvm" ) {
-                var installInventoryFile = installDir.entry("install-inventory.json");
-                resolveJvmLaunchArgs(cast config, installInventoryFile, true);
-            } else if ( config.kind == "jvm_cli" ) {
-                resolveJvmCliLaunchArgs(cast config);
-            } else if ( config.kind == "args" )
-                resolveStandardArgs(cast config);
-            else 
-                throw "unable to resolve config kind " + config.kind;
+            if ( config.logFiles )
+                archiveOldLogs();
 
-        switch resolvedLaunch.kind {
-            case "exec": 
-                // we use exec so this replaces the existing process with the exec'ed process
-                // so this program effecitvely exits when we call exec here
-                if ( resolvedLaunch.cwd != null ) 
-                    python.lib.Os.chdir(resolvedLaunch.cwd);
-                PyOs2.execvpe(resolvedLaunch.executable, resolvedLaunch.args, resolvedLaunch.env);
+            var resolvedLaunch: ResolvedLaunch = 
+                if ( config.kind == "jvm" ) {
+                    var installInventoryFile = installDir.entry("install-inventory.json");
+                    resolveJvmLaunchArgs(cast config, installInventoryFile, true);
+                } else if ( config.kind == "jvm_cli" ) {
+                    resolveJvmCliLaunchArgs(cast config);
+                } else if ( config.kind == "args" )
+                    resolveStandardArgs(cast config);
+                else 
+                    throw "unable to resolve config kind " + config.kind;
 
-            case "popen":
-                logDetail("running -- " + resolvedLaunch.args);
+            switch resolvedLaunch.kind {
+                case "exec": 
+                    // we use exec so this replaces the existing process with the exec'ed process
+                    // so this program effecitvely exits when we call exec here
+                    if ( resolvedLaunch.cwd != null ) 
+                        python.lib.Os.chdir(resolvedLaunch.cwd);
+                    PyOs2.execvpe(resolvedLaunch.executable, resolvedLaunch.args, resolvedLaunch.env);
 
-                var popen = new Popen(resolvedLaunch.args, null, resolvedLaunch.executable, null, Subprocess.PIPE, Subprocess.PIPE, null, false, false, resolvedLaunch.cwd, resolvedLaunch.env);
+                case "popen":
+                    logTrace("running -- " + resolvedLaunch.args);
 
-                function firstIO(out: OutputStream): Void {
-                    out.write("first output at " + PathOps.timestampStr() + "\n");
-                }
+                    var popen = new Popen(resolvedLaunch.args, null, resolvedLaunch.executable, null, Subprocess.PIPE, Subprocess.PIPE, null, false, false, resolvedLaunch.cwd, resolvedLaunch.env);
 
-                var timestampStr = PathOps.timestampStr();
+                    function firstIO(out: OutputStream): Void {
+                        out.write("first output at " + PathOps.timestampStr() + "\n");
+                    }
 
-                logDetail("setting up pipes");
-                this.pipedStdout = new PipedStream(this, popen.stdout.asInputStream(), PySys.stdout, "details", firstIO, config.logFiles, timestampStr);
-                this.pipedStderr = new PipedStream(this, popen.stderr.asInputStream(), PySys.stderr, "errors", firstIO, config.logFiles, timestampStr);
+                    var timestampStr = PathOps.timestampStr();
 
-                this.pipedStdout.start();
-                this.pipedStderr.start();
+                    logTrace("setting up pipes");
+                    this.pipedStdout = new PipedStream(this, popen.stdout.asInputStream(), PySys.stdout, "details", firstIO, config.logFiles, timestampStr);
+                    this.pipedStderr = new PipedStream(this, popen.stderr.asInputStream(), PySys.stderr, "errors", firstIO, config.logFiles, timestampStr);
 
-                // logDetail("pipes setup");
+                    this.pipedStdout.start();
+                    this.pipedStderr.start();
 
-                logDetail("initializeLogRollers");
-                initializeLogRollers();
-                logDetail("initializeLogRollers complete");
+                    // logDetail("pipes setup");
 
-                // logDetail("waiting for process to complete");
-                popen.wait();
-                // logDetail("process completed with exit code " + popen.returncode);
+                    logTrace("initializeLogRollers");
+                    initializeLogRollers();
+                    logTrace("initializeLogRollers complete");
 
-                this.pipedStdout.close();
-                this.pipedStdout.close();
-            default:
-                throw "don't know how to handle ResolvedLaunch.kind = ${resolvedLaunch.kind}";
+                    // logDetail("waiting for process to complete");
+                    popen.wait();
+                    // logDetail("process completed with exit code " + popen.returncode);
+
+                    this.pipedStdout.close();
+                    this.pipedStdout.close();
+                default:
+                    throw "don't know how to handle ResolvedLaunch.kind = ${resolvedLaunch.kind}";
+            }
         }
     }
 

@@ -31,7 +31,7 @@ class FileIOInputStream implements InputStream {
     public function readLine(): String {
         var bytes: Bytes = cast delegate.readline();
         var line = bytes.decode();
-        // trace("read line " + line);
+        // Logger.trace("read line " + line);
         return 
             if ( line.endsWith("\n") ) {
                 line.substr(0, line.length-1);

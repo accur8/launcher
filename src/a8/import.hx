@@ -1,6 +1,8 @@
 package a8;
 
 
+import a8.Logger;
+
 using Lambda;
 using StringTools;
 using a8.OptionOps;

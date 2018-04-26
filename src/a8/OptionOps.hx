@@ -9,6 +9,12 @@ import haxe.ds.Option;
 
 class OptionOps {
 
+    public static function toOption<A>(a: A): Option<A> {
+        return 
+            if ( a == null ) None;
+            else Some(a);
+    }
+
     public static function nonEmpty<A>(o: Option<A>): Bool {
         return 
             switch o {

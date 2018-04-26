@@ -10,15 +10,13 @@
 
   * make sure the processname uses the symlink name
 
-  * handle manually passed in --version
-  * add --versions-version support
-
-  * how do we trigger an update (if latest)
+  * handle --l- options
+    * --l-set-version
+    * --l-resolve
+    * --l-verbose
 
 
 == code coolness ==
-
-  * StreamOps and PathOps working from macros (so can be put in import.hx)
 
   * switch to using Input and Output for the file streaming parts
 
@@ -26,7 +24,6 @@
 == features ==
 
     * early log file setup
-    * auto restart config setting
     * properly set tmp folder
     * auto restart w/backoff
 
