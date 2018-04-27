@@ -89,7 +89,7 @@ class PipedStream {
 
                 //    4) trigger any kind of disk space based log rollers
             case None: 
-                throw "this should not happen since rollover should never get called when we don't have a Some for outputFile: Option<PipedStreamOutputFile>";
+                throw new Exception("this should not happen since rollover should never get called when we don't have a Some for outputFile: Option<PipedStreamOutputFile>");
         }
 
     }

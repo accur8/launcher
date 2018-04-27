@@ -32,7 +32,7 @@ class OptionOps {
         return 
             switch o {
                 case Some(i): i;
-                case None: throw msg;
+                case None: throw new a8.Exception(msg);
             }
     }
 

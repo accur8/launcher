@@ -54,7 +54,7 @@ class CommandLineProcessor {
                 var parms = 
                     if ( argDef.parmCount == 0 ) Some(argDef.name);
                     else if ( argDef.parmCount == 1 ) Some(temp.pop());
-                    else throw "can only handle parmCount of 0 or 1";
+                    else throw new Exception("can only handle parmCount of 0 or 1");
                 argDef.apply(config, parms);
                 argDef.processed = true;
             }

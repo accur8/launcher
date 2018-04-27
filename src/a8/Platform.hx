@@ -44,11 +44,11 @@ class AbstractPlatform {
     }
 
     public function spawn(threadName: String, fn: Void->Void): Void {
-        throw "TODO ??? implement me";
+        throw new a8.Exception("TODO ??? implement me");
     }
 
     public function moveTo(source: Path, target: Path): Void {
-        throw "TODO ??? implement me";
+        throw new a8.Exception("TODO ??? implement me");
     }
 }
 

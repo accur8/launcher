@@ -37,7 +37,7 @@ class Exec {
                 }
             );
         if ( exitCode != 0 && failOnNonZeroExitCode ) {
-            throw 'non-zero exit code of ${exitCode} while executing -- ${asCommandLine()}';
+            a8.Exception.thro('non-zero exit code of ${exitCode} while executing -- ${asCommandLine()}');
         }
         return exitCode;
     }
@@ -87,7 +87,7 @@ class Exec {
 
         Logger.trace("" + result.exitCode);
         if ( result.exitCode != 0 && failOnNonZeroExitCode ) {
-            throw result;
+            a8.Exception.thro('non-zero exit code of ${result.exitCode} while executing -- ${asCommandLine()}');
         }
 
         return result;

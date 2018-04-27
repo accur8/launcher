@@ -11,8 +11,8 @@ class ParseResultOps {
                 case ParseSuccess(to, _):
                     to;
                 case _:
-                    throw "unable to get a to from a ParseFailure";    
-            }
+                    throw new Exception("unable to get a to from a ParseFailure");
+
     }
 
 }

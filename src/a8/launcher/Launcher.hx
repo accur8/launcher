@@ -138,7 +138,7 @@ class Launcher {
             } else if ( jvmlauncher.version != null ) {
                 jvmlauncher.version + ".json";
             } else {
-                throw "must provide a config with branch or version";
+                throw new Exception("must provide a config with branch or version");
             }
         var inventoryFile = a8VersionsCache.entry(jvmlauncher.organization + "/" + jvmlauncher.artifact + "/" + versionFile);
         Logger.trace("using inventory file - " + inventoryFile.toString());
@@ -178,7 +178,7 @@ class Launcher {
     function resolveJvmLaunchArgs(jvmlauncher: JvmLaunchConfig, installInventoryFile: Path, createAppNameSymlink: Bool): ResolvedLaunch {
 
         if ( !installInventoryFile.exists() ) {
-            throw "inventory file does not exist " + installInventoryFile.toString();
+            throw new Exception("inventory file does not exist " + installInventoryFile.toString());
         }
 
         var launchConfig: LaunchConfig = cast jvmlauncher;
@@ -277,7 +277,7 @@ class Launcher {
             } else if ( config.kind == "args" )
                 resolveStandardArgs(cast config);
             else 
-                throw "unable to resolve config kind " + config.kind;
+                throw new Exception("unable to resolve config kind " + config.kind);
 
         if ( !this.config.resolveOnly ) {
 
@@ -324,7 +324,7 @@ class Launcher {
                     this.pipedStdout.close();
                     this.pipedStdout.close();
                 default:
-                    throw "don't know how to handle ResolvedLaunch.kind = ${resolvedLaunch.kind}";
+                    throw new Exception("don't know how to handle ResolvedLaunch.kind = ${resolvedLaunch.kind}");
             }
         }
     }

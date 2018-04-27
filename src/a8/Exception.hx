@@ -6,6 +6,10 @@ import haxe.PosInfos;
 
 class Exception {
 
+    public static function thro(message: String) {
+        throw new Exception(message);
+    }
+
     public var message(default,null): String;
     public var causedBy(default,null): Option<Exception>;
     public var callStack(default,null): Array<haxe.CallStack.StackItem>;
