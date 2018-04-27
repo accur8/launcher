@@ -52,7 +52,7 @@ class OptionOps {
             }
     }
 
-    public static function get<A>(o: Option<A>, def: A): A {
+    public static function get<A>(o: Option<A>): A {
         return getOrError(o, "expected a Some");
     }
 

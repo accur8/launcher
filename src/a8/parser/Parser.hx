@@ -4,7 +4,6 @@ package a8.parser;
 import haxe.ds.Option;
 import a8.parser.ParseResult;
 
-using Lambda;
 using a8.parser.ParseResultOps;
 
 
@@ -37,33 +36,40 @@ class ParserHelper {
 
 }
 
-class MacroHelper {
+// class MacroHelper {
 
-    // This macro generates code using Context.parse()
-      public static macro function trace_build_age_with_parse() {
-        var buildTime = Math.floor(Date.now().getTime() / 1000);
+//     // // This macro generates code using Context.parse()
+//     //   public static macro function trace_build_age_with_parse() {
+//     //     var buildTime = Math.floor(Date.now().getTime() / 1000);
 
-        var code = '{
-          var runTime = Math.floor(Date.now().getTime() / 1000);
-          var age = runTime - $buildTime;
-          trace("Right now it\'s "+runTime+", and this build is "+age+" seconds old");
-        }';
+//     //     var code = '{
+//     //       var runTime = Math.floor(Date.now().getTime() / 1000);
+//     //       var age = runTime - $buildTime;
+//     //       trace("Right now it\'s "+runTime+", and this build is "+age+" seconds old");
+//     //     }';
 
-        return Context.parse(code, Context.currentPos());
-      }
+//     //     return Context.parse(code, Context.currentPos());
+//     //   }
 
-    public macro static function flattenTuple<A>(e0: ExprOf<Parser<A>>): Void {
-        // trace(e.toString()); // @:this this
-        // TInst(String,[])
-        trace(Context.typeof(e0));
+//     // public macro static function flattenTuple<A>(e0: ExprOf<Parser<A>>): Void {
+//     //     // trace(e.toString()); // @:this this
+//     //     // TInst(String,[])
+//     //     trace(Context.typeof(e0));
+//     // }
+
+
+// }
+
+
+@:tink
+class Source {
+
+    var value: String;
+
+    public function new(value: String) {
+        this.value = value;
     }
 
-
-}
-
-
-class Source implements a8.ValueClass {
-    var value: String;
 }
 
 
@@ -183,12 +189,12 @@ interface SnippetParser<A> {
 }
 
 
+@:tink
 class FilterParser<A> 
-    implements SnippetParser<A> 
-    implements ValueClass {
+    implements SnippetParser<A> {
 
-    var parser: SnippetParser<A>;
-    var filterFn: A -> Bool;
+    var parser: SnippetParser<A> = _;
+    var filterFn: A -> Bool = _;
 
     public function parse(source: Source, pos: Position): ParseResult<A> {
         var result = parser.parse(source, pos);
@@ -209,11 +215,11 @@ class FilterParser<A>
 }
 
 
+@:tink
 class OptParser<A>
-    implements SnippetParser<Option<A>>
-    implements ValueClass {
+    implements SnippetParser<Option<A>> {
 
-    var parser: SnippetParser<A>;
+    var parser: SnippetParser<A> = _;
 
     public function parse(source: Source, pos: Position): ParseResult<Option<A>> {
         var result = parser.parse(source, pos);
@@ -235,11 +241,11 @@ class OptParser<A>
 
 }
 
+@:tink
 class OrParser<A> 
-    implements SnippetParser<A> 
-    implements ValueClass {
+    implements SnippetParser<A> {
 
-    var parsers: Array<SnippetParser<A>>;
+    var parsers: Array<SnippetParser<A>> = _;
 
     public function parse(source: Source, pos: Position): ParseResult<A> {
         var result: ParseResult<A> = null;
@@ -256,13 +262,12 @@ class OrParser<A>
 
 }
 
-
+@:tink
 class AndParser<A,B> 
-    implements SnippetParser<Tuple2<A,B>> 
-    implements ValueClass {
+    implements SnippetParser<Tuple2<A,B>> {
 
-    var parserA: SnippetParser<A>;
-    var parserB: SnippetParser<B>;
+    var parserA: SnippetParser<A> = _;
+    var parserB: SnippetParser<B> = _;
 
     public function parse(source: Source, pos: Position): ParseResult<Tuple2<A,B>> {
         var resultA = parserA.parse(source, pos);
@@ -286,11 +291,11 @@ class AndParser<A,B>
 
 }
 
+@:tink
 class CharsWhileParser
-    implements SnippetParser<String> 
-    implements ValueClass {
+    implements SnippetParser<String> {
 
-    var whileFn: String->Bool;
+    var whileFn: String->Bool = _;
 
     public function parse(source: Source, pos: Position): ParseResult<String> {
         var cont = true;
@@ -312,11 +317,11 @@ class CharsWhileParser
 
 }
 
+@:tink
 class StringParser 
-    implements SnippetParser<String> 
-    implements ValueClass {
+    implements SnippetParser<String> {
 
-    var matchMe: String;
+    var matchMe: String = _;
 
     public function parse(source: Source, pos: Position): ParseResult<String> {
         var len = matchMe.length;
@@ -333,13 +338,12 @@ class StringParser
 
 }
 
-
+@:tink
 class MapParser<A,B> 
-    implements SnippetParser<B> 
-    implements ValueClass {
+    implements SnippetParser<B> {
 
-    var parser: SnippetParser<A>;
-    var mapFn: A -> B;
+    var parser: SnippetParser<A> = _;
+    var mapFn: A -> B = _;
 
     public function parse(source: Source, pos: Position): ParseResult<B> {
         var result = parser.parse(source, pos);
@@ -445,10 +449,11 @@ class RepeatSeparatorParser<A>
 
 }
 
-
 class SuccessParser<Void> 
-    implements SnippetParser<Void> 
-    implements ValueClass {
+    implements SnippetParser<Void> {
+
+    public function new() {
+    }
 
     public function parse(source: Source, pos: Position): ParseResult<Void> {
         return 
@@ -462,8 +467,10 @@ class SuccessParser<Void>
 
 
 class EndOfInputParser<Void> 
-    implements SnippetParser<Void> 
-    implements ValueClass {
+    implements SnippetParser<Void> {
+
+    public function new() {
+    }
 
     public function parse(source: Source, pos: Position): ParseResult<Void> {
         return 

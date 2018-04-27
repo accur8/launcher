@@ -1,6 +1,8 @@
 package a8;
 
 
+import haxe.ds.StringMap;
+import a8.Tuple2;
 import a8.Logger;
 
 using Lambda;
@@ -13,9 +15,7 @@ using a8.HaxeOps;
 
 
 #if !macro
-// import a8.StreamOps;
 using a8.StreamOps;
-// using a8.StreamOps2;
 using a8.PathOps;
 using a8.PyOps;
 #end

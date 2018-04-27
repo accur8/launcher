@@ -7,6 +7,7 @@ import sys.io.File;
 import sys.FileSystem;
 import a8.Platform;
 
+@:tink
 class PathOps {
 
     public static function timestampStr(): String {
@@ -43,6 +44,10 @@ class PathOps {
 
     public static function readText(path: Path): String {
         return File.getContent(path.toString());
+    }
+
+    public static function readLines(path: Path): Array<String> {
+        return readText(path).split("\n");
     }
 
     public static function makeDirectories(path: Path): Void {
@@ -140,6 +145,27 @@ class PathOps {
 
     public static function outputStream(p: Path): a8.Streams.OutputStream {
         return StreamOps.fileOutputStream(realPathStr(p));
+    }
+
+    public static function readProperties(p: Path, ?failOnNotFound: Bool): StringMap<String> {
+        var rf = failOnNotFound.toOption().getOrElse(false);
+        var exists = p.exists();
+        return 
+            if ( !exists && !rf ) {
+                new StringMap();
+            } else {
+                p.readLines()
+                    .flatMap(function(line) {
+                        var a = line.split("=");
+                        return 
+                            if ( a.length == 2 ) {
+                                [new Tuple2(a[0], a[1])];
+                            } else {
+                                [];
+                            }
+                    })
+                    .toMap();
+            }
     }
 
 }

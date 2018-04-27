@@ -1,9 +1,14 @@
 package a8.parser;
 
 
-
-class Position implements ValueClass {
+class Position {
+    
     var index: Int;
+
+    public function new(index: Int) {
+        this.index = index;
+    }
+
 }
 
 
