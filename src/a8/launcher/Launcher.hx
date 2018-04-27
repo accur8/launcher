@@ -144,7 +144,17 @@ class Launcher {
         Logger.trace("using inventory file - " + inventoryFile.toString());
         if ( !inventoryFile.exists() || this.config.resolveOnly ) {
             var exec = new a8.Exec();
-            var args = exec.args = [PathOps.programPath().parent() + "/a8-versions", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
+            
+            // coursier launch -r https://deployer:Eb26fhnWFatdyAdeg84fAQ@accur8.artifactoryonline.com/accur8/all a8:a8-versions_2.12:1.0.0-20180425_1229_master -M a8.versions.apps.Main
+            Logger.warn("need to read ~/.sbt/credentials here");
+            var user: String = "deployer";
+            var password: String = "Eb26fhnWFatdyAdeg84fAQ";
+
+            var version = "1.0.0-20180425_1229_master";
+
+            var repoUrl = 'https://${user}:${password}@accur8.artifactoryonline.com/accur8/all';
+
+            var args = exec.args = [PathOps.programPath().parent() + "/coursier", "launch", "--repository", repoUrl, 'a8:a8-versions_2.12:${version}', "-M", "a8.versions.apps.Main", "--", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
             if ( this.config.explicitVersion.nonEmpty() ) {
                 args.push("--version");
                 args.push(this.config.explicitVersion.get(""));
@@ -269,7 +279,7 @@ class Launcher {
                 resolveStandardArgs(cast config);
             else 
                 throw "unable to resolve config kind " + config.kind;
-            
+
         if ( !this.config.resolveOnly ) {
 
             if ( config.logFiles )

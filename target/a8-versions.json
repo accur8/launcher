@@ -1,7 +1,0 @@
-{
-  "kind": "jvm_cli",
-  "mainClass": "a8.versions.apps.Main",
-  "organization": "a8",
-  "artifact": "a8-versions_2.12",
-  "version": "1.0.0-20180425_1229_master"
-}

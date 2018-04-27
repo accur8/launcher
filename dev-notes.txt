@@ -1,6 +1,4 @@
 
-
-
 == bugs ==
 
   * double ctl + C needed to terminate
@@ -8,12 +6,7 @@
 
 == launcher actions ==
 
-  * make sure the processname uses the symlink name
-
-  * handle --l- options
-    * --l-set-version
-    * --l-resolve
-    * --l-verbose
+  * make sure the processname uses the symlink name, may require using os.exec for this
 
 
 == code coolness ==
