@@ -89,7 +89,9 @@ class Main {
 
 
 typedef LaunchConfig = {
+    
     var kind: String;
+
     @:optional var quiet: Bool;
     @:optional var installDir: String;
     @:optional var logsDir: String;
