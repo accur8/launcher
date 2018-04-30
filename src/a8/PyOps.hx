@@ -19,6 +19,8 @@ extern class PyOs2 {
     public static function symlink(src: String, dst: String): Void;
 
     public static function execvpe(file: String, args: Array<String>, env: python.Dict<String,String>): Void;
+
+    public static function readlink(src: String): String;
     
 }
 

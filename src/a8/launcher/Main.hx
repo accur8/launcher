@@ -15,9 +15,23 @@ class Main {
     static function loadConfig(): LaunchConfig {
 
         var execPath = PathOps.executablePath();
-
         var appName = execPath.file;
-        var configFile = execPath.parent().entry(execPath.file + ".json");
+
+        var configExtensions = [".json", ".launcher.json"];
+
+        var possibleConfigFiles = 
+            execPath
+                .symlinkChain()
+                .flatMap([l] => configExtensions.map([e] => l.parent().entry(l.name() + e)))
+                .array()
+                ;
+
+        // trace(possibleConfigFiles);
+
+        var configFile = 
+            possibleConfigFiles
+                .find([f]=>f.exists())
+                ;
 
         var config: LaunchConfig = Json.parse(configFile.readText());
 

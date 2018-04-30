@@ -32,6 +32,7 @@ interface Platform {
     function isFile(path: Path): Bool;
     function spawn(threadName: String, fn: Void->Void): Void;
     function moveTo(source: Path, target: Path): Void;
+    function absPath(path: Path): Path;
 
 }
 
@@ -70,6 +71,10 @@ class NekoPlatform extends AbstractPlatform implements Platform {
 class PythonPlatform extends AbstractPlatform implements Platform {
 
     public function new() {
+    }
+
+    public function absPath(path: Path): Path {
+        return PathOps.path(python.lib.os.Path.normpath(python.lib.os.Path.abspath(path.toString())));
     }
 
     public function executablePath(): Path {

@@ -22,6 +22,25 @@ class PathOps {
         return new Path(p);
     }
 
+    public static function symlinkChain(p: Path): Array<Path> {
+        var paths = [];
+        function impl(thePath: Path) {
+            paths.push(absPath(thePath));
+            if ( python.lib.os.Path.islink(thePath.toString()) ) {
+                var relativeLink = PyOs2.readlink(thePath.toString());
+                var absoluteLink = 
+                    if ( python.lib.os.Path.isabs(relativeLink) )
+                        relativeLink;
+                    else
+                        python.lib.os.Path.join(parent(thePath).toString(), relativeLink);
+                var p = path(absoluteLink);
+                impl(p);
+            }
+        }
+        impl(p);
+        return paths;
+    }
+
     /** 
       *  This is the path to the program invoked from the command line.
       *  i.e. without symlinks resolved.
@@ -32,6 +51,19 @@ class PathOps {
 
     public static function userHome(): Path {
         return new Path(Sys.environment().get("HOME"));
+    }
+
+    public static function absPath(p: Path): Path {
+        return PlatformOps.instance.absPath(p);
+    }
+
+    public static function name(p: Path): String {
+        return 
+            if ( p.ext == null ) {
+                p.file;
+            } else {
+                p.file + "." + p.ext;
+            }
     }
 
     /** 
