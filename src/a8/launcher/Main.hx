@@ -65,6 +65,8 @@ class Main {
 
     public static function main(): Void {
 
+        var exitCode = 0;
+
         try {
 
             var execPath = PathOps.executablePath();
@@ -88,14 +90,15 @@ class Main {
                     args
                 );
 
-            launcher.runAndWait();
+            exitCode = launcher.runAndWait();
+            
         } catch (e: Dynamic) {
             var stack = haxe.CallStack.exceptionStack();
             Logger.warn("" + e + "\n" + stack.asString("    "));
             Sys.exit(1);
         }
 
-        Sys.exit(0);
+        Sys.exit(exitCode);
 
     }
 

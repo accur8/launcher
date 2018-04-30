@@ -262,7 +262,7 @@ class Launcher {
     }
 
 
-    public function runAndWait(): Void {
+    public function runAndWait(): Int {
 
         logTrace("installDir = " + installDir);
         logTrace("logsDir = " + logsDir);
@@ -279,7 +279,9 @@ class Launcher {
             else 
                 throw new Exception("unable to resolve config kind " + config.kind);
 
-        if ( !this.config.resolveOnly ) {
+        if ( this.config.resolveOnly ) {
+            return 0;
+        } else {
 
             if ( config.logFiles )
                 archiveOldLogs();
@@ -292,6 +294,8 @@ class Launcher {
                     if ( resolvedLaunch.cwd != null ) 
                         python.lib.Os.chdir(resolvedLaunch.cwd);
                     PyOs2.execvpe(resolvedLaunch.executable, resolvedLaunch.args, resolvedLaunch.env);
+
+                    throw new Exception("this never happens");
 
                 case "popen":
                     logTrace("running -- " + resolvedLaunch.args);
@@ -323,6 +327,9 @@ class Launcher {
 
                     this.pipedStdout.close();
                     this.pipedStdout.close();
+
+                    return popen.returncode;
+
                 default:
                     throw new Exception("don't know how to handle ResolvedLaunch.kind = ${resolvedLaunch.kind}");
             }
