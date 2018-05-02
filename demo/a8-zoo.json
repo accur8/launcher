@@ -1,0 +1,7 @@
+{
+  "kind": "jvm_cli",
+  "mainClass": "a8.zoolander.Main",
+  "organization": "a8",
+  "artifact": "a8-zoolander_2.12",
+  "branch": "master"
+}
