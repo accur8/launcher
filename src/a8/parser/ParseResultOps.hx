@@ -12,7 +12,7 @@ class ParseResultOps {
                     to;
                 case _:
                     throw new Exception("unable to get a to from a ParseFailure");
-
+            }
     }
 
 }

@@ -1,7 +1,13 @@
--main a8.launcher.Main
+
 -cp src
 -lib tink_lang
 -lib tink_core
--python target/a8-launcher.py
 -debug
 --macro a8.AddShebang.apply("target/a8-launcher.py", "#!/usr/bin/env python3")
+
+# -python target/a8-launcher.py
+# #-js main-javascript.js
+# -main a8.parser.ParserDemo
+
+-python target/a8-launcher.py
+-main a8.launcher.Main

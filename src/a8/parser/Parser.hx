@@ -9,30 +9,63 @@ using a8.parser.ParseResultOps;
 
 abstract Tuple2<A,B>(Array<Any>) {
 
-  inline public function new(a: A, b: B) {
-    this = [a, b];
-  }
 
-  inline public function _1(): A {
-    return this[0];
-  }
+    public var _1(get, never): A;
+    public var _2(get, never): B;
 
-  inline public function _2(): B {
-    return this[1];
-  }
 
-  inline public function toString(): String {
-    return haxe.Json.stringify(this);
-  }
+    inline public function new(a: A, b: B) {
+        this = [a, b];
+    }
+
+    inline public function get__1(): A {
+        return this[0];
+    }
+
+    inline public function get__2(): B {
+        return this[1];
+    }
+
+    inline public function toString(): String {
+        return haxe.Json.stringify(this);
+    }
 
 }
 
 
+@:tink
+class ParserOps {
 
-class ParserHelper {
+    public static var SuccessParser(default, null): Parser<Void> = new SuccessParser();
+    public static var EndOfInputParser(default, null): Parser<Void> = new EndOfInputParser();
+    public var digits(default, null): Parser<String> = charsWhile([ch]=>"0123456789".indexOf(ch) >= 0);
 
-    public static var SuccessParser: Parser<Void> = new SuccessParser();
-    public static var EndOfInputParser: Parser<Void> = new EndOfInputParser();
+    public function str(s: String): Parser<String>  {
+        return new StringParser(s);
+    }
+
+    public function charsWhile(fn: String->Bool): Parser<String> {
+        return new CharsWhileParser(function(ch, index) {
+            return fn(ch);
+        });
+    }
+
+    public function charsWhileI(fn: String->Int->Bool): Parser<String> {
+        return new CharsWhileParser(fn);
+    }
+
+    /**
+     * parses a single character
+     */
+    public function char(fn: String->Bool): Parser<String> {
+        return new CharsWhileParser(function(ch, index) {
+            return
+                if ( index == 0 )
+                    fn(ch);
+                else
+                    false;
+        });
+    }
 
 }
 
@@ -64,7 +97,7 @@ class ParserHelper {
 @:tink
 class Source {
 
-    var value: String;
+    public var value: String;
 
     public function new(value: String) {
         this.value = value;
@@ -72,19 +105,6 @@ class Source {
 
 }
 
-
-@:tink 
-class ParserBuilder {
-
-    public function str(s: String): Parser<String>  {
-        return new StringParser(s);
-    }
-
-    public function charsWhile(fn: String->Bool): Parser<String> {
-        return new CharsWhileParser(fn);
-    }
-
-}
 
 
 @:tink 
@@ -100,12 +120,16 @@ abstract Parser<A>(SnippetParser<A>) {
         return new Parser(p);
     }
 
-    inline public function new(parseFn: SnippetParser<A>) {
-        this = parseFn;
+    inline public function new(snippetParser: SnippetParser<A>) {
+        this = snippetParser;
     }
 
     inline private function self(): SnippetParser<A> {
         return cast this;
+    }
+
+    public function parse(source: Source): ParseResult<A> {
+        return self().parse(source, new Position(0));
     }
 
     @:to
@@ -113,8 +137,8 @@ abstract Parser<A>(SnippetParser<A>) {
         return this;
     }    
 
-    @:op(A & B)
-    inline public function and<B>(rhs: Parser<B>) {
+    @:op(A * B)
+    inline public function andThen<B>(rhs: Parser<B>): Parser<Tuple2<A,B>> {
         return cast new Parser(new AndParser(self(), rhs.self()));
     }
 
@@ -141,13 +165,13 @@ abstract Parser<A>(SnippetParser<A>) {
         return new Parser(new MapParser(self(), fn));
     }
 
-    inline public function ws0(): Parser<A> {
-        return new Parser(new MapParser(self(), function(i) { return null; } ));
-    }
+    // inline public function ws0(): Parser<A> {
+    //     return new Parser(new MapParser(self(), function(i) { return null; } ));
+    // }
 
-    inline public function ws(): Parser<A> {
-        return new Parser(new MapParser(self(), function(i) { return null; } ));
-    }
+    // inline public function ws(): Parser<A> {
+    //     return new Parser(new MapParser(self(), function(i) { return null; } ));
+    // }
 
     inline public function void(): Parser<Void> {
         return new Parser(new MapParser(self(), function(i) { return null; } ));
@@ -157,28 +181,42 @@ abstract Parser<A>(SnippetParser<A>) {
         return new Parser(new FilterParser(self(), fn));
     }
 
+    inline public function capture(): Parser<String> {
+        return new CaptureParser(self());
+    }
+
     /**
      *   Run this parser to the end of the input
      */
     inline public function fullParse(source: String): ParseResult<A> {
-        var parseToEnd = land(ParserHelper.EndOfInputParser);
+        var parseToEnd = land(ParserOps.EndOfInputParser);
         return parseToEnd.self().parse(new Source(source), new Position(0));
     }
 
-    inline public function rep(options: {?min: Int, ?max: Int}): Parser<Array<A>> {
-        return cast new Parser(new RepeatSeparatorParser(self(), ParserHelper.SuccessParser, options.min, options.max));
+    inline public function rep(?options: {?min: Int, ?max: Int}): Parser<Array<A>> {
+        if ( options == null ) {
+            options = {};
+        }
+        return cast new Parser(new RepeatSeparatorParser(self(), ParserOps.SuccessParser, options.min, options.max));
     }
 
     inline public function rep0(): Parser<Array<A>> {
         return rep({min: 0});
     }
 
-    inline public function repsep(separator: Parser<Any>, options: { ?min: Int, ?max: Int}): Parser<Array<A>> {
+    inline public function repsep(separator: Parser<Dynamic>, ?options: { ?min: Int, ?max: Int}): Parser<Array<A>> {
+        if ( options == null ) {
+            options = {};
+        }
         return cast new Parser(new RepeatSeparatorParser(self(), separator, options.min, options.max));
     }
 
-    inline public function repsep0(separator: Parser<Any>): Parser<Array<A>> {
+    inline public function repsep0(separator: Parser<Dynamic>): Parser<Array<A>> {
         return repsep(separator, {min: 0});
+    }
+
+    inline public function log(?posInfos: haxe.PosInfos): Parser<A> {
+        return new LogParser(self(), posInfos);
     }
 
 }
@@ -186,6 +224,22 @@ abstract Parser<A>(SnippetParser<A>) {
 
 interface SnippetParser<A> {
     function parse(source: Source, pos: Position): ParseResult<A>;
+}
+
+
+@:tink
+class LogParser<A> 
+    implements SnippetParser<A> {
+
+    var parser: SnippetParser<A> = _;
+    var posInfos: haxe.PosInfos = _;
+
+    public function parse(source: Source, pos: Position): ParseResult<A> {
+        var r = parser.parse(source, pos);
+        haxe.Log.trace(r, posInfos);
+        return r;
+    }
+
 }
 
 
@@ -241,6 +295,29 @@ class OptParser<A>
 
 }
 
+
+@:tink
+class CaptureParser<A>
+    implements SnippetParser<String> {
+
+    var parser: SnippetParser<A> = _;
+
+    public function parse(source: Source, pos: Position): ParseResult<String> {
+        var result = parser.parse(source, pos);
+        return
+            switch (result) {
+                case ParseFailure(_, _):
+                    cast result;
+                case ParseSuccess(to, r):
+                    ParseSuccess(
+                        to,
+                        source.value.substring(pos.index, to.index)
+                    );
+            };
+    }
+
+}
+
 @:tink
 class OrParser<A> 
     implements SnippetParser<A> {
@@ -259,6 +336,23 @@ class OrParser<A>
         }
         return result;
     }
+
+}
+
+@:tink
+class LazyParser<A>
+    implements SnippetParser<A> {
+
+    var lazyFn: Void->Parser<A> = _;
+    var delegateParser: SnippetParser<A> = null;
+
+    public function parse(source: Source, pos: Position): ParseResult<A> {
+        if ( delegateParser == null) {
+            delegateParser = lazyFn().toSnippetParser();
+        }
+        return delegateParser.parse(source, pos);
+    }
+
 
 }
 
@@ -295,16 +389,18 @@ class AndParser<A,B>
 class CharsWhileParser
     implements SnippetParser<String> {
 
-    var whileFn: String->Bool = _;
+    var whileFn: String->Int->Bool = _;
 
     public function parse(source: Source, pos: Position): ParseResult<String> {
         var cont = true;
+        var offset = 0;
         var index = pos.index;
-        while( cont && pos.index < source.value.length ) {
+        while( cont && index < source.value.length ) {
             var ch = source.value.charAt(index);
-            cont = whileFn(ch);
+            cont = whileFn(ch, offset);
             if ( cont ) {
                 index += 1;
+                offset += 1;
             }
         }
         return 
@@ -481,10 +577,5 @@ class EndOfInputParser<Void>
             };
     }
 
-}
-
-@:tink
-class ParserOps {
-    public static var digitsParser = new CharsWhileParser([ch]=>"0123456789".indexOf(ch) >= 0);
 }
 

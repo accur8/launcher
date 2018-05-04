@@ -18,6 +18,44 @@ class HaxeOps {
         return map;
     }
 
+    public static function isDigit(ch: String): Bool {
+        return 
+            ch.length == 1 && ch >= "0" && ch <= "0"
+            ;
+    }
+
+    public static function isAlpha(ch: String): Bool {
+        return 
+            ch.length == 1 && 
+                ((ch >= "A" && ch <= "Z")
+                || (ch >= "a" && ch <= "z"))
+            ;
+    }
+
+    public static function isWhitespace(ch: String): Bool {
+        return 
+            switch ch {
+                case " " | "\n" | "\t" | "\r":
+                    true;
+                default:
+                    false;
+            }
+    }
+
+    public static function isHaxeIdentifierFirstChar(ch: String): Bool {
+        return
+            ch.length == 1 &&
+                (
+                    isAlpha(ch)
+                    || ch == "_"
+                )
+            ;
+    }
+
+    public static function isHaxeIdentifierSecondChar(ch: String): Bool {
+        return isHaxeIdentifierFirstChar(ch) || isDigit(ch);
+    }
+
 }
 
 

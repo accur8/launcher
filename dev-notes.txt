@@ -12,6 +12,9 @@
 == code coolness ==
 
   * switch to using Input and Output for the file streaming parts
+  * assertion macros
+  * parm logging macros
+  * logging macros that auto wrap in an if
 
 
 == features ==
