@@ -15,9 +15,9 @@ using a8.HaxeOps;
 
 
 #if !macro
-// using a8.StreamOps;
-// using a8.PathOps;
-// using a8.PyOps;
+    using a8.StreamOps;
+    using a8.PathOps;
+    using a8.PyOps;
 #end
 
 
