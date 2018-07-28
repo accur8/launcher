@@ -25,8 +25,13 @@ class CommandLineProcessor {
             apply: function(config: LaunchConfig, args: Option<String>) {
                 config.resolveOnly = args.nonEmpty();
             }
-        }
-    ];
+        },{ 
+            name: "--l-help", 
+            parmCount: 0,
+            apply: function(config: LaunchConfig, args: Option<String>) {
+                config.showHelp = true;
+            }
+        }    ];
 
     public function new() {
     }

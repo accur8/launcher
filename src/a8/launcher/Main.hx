@@ -83,14 +83,33 @@ class Main {
 
             Logger.traceEnabled = !config.quiet;
 
-            var launcher = 
-                new Launcher(
-                    config,
-                    appName,
-                    args
-                );
+            if ( config.showHelp ) {
+                trace('
 
-            exitCode = launcher.runAndWait();
+--l-version version   
+   
+    use an explicit version
+
+
+--l-resolveOnly
+
+    resolve the version or latest if version is unspecified, this will not run the app
+
+
+--l-help
+
+    shows this help text
+
+                    ');
+            } else {
+                var launcher = 
+                    new Launcher(
+                        config,
+                        appName,
+                        args
+                    );
+                exitCode = launcher.runAndWait();
+            }
             
         } catch (e: Dynamic) {
             var stack = haxe.CallStack.exceptionStack();
@@ -115,6 +134,7 @@ typedef LaunchConfig = {
     @:optional var logRollers: Array<Dynamic>;
     @:optional var logFiles: Bool;
     @:optional var resolveOnly: Bool;
+    @:optional var showHelp: Bool;
 
     /* all items below are not loaded from the json */
 
