@@ -63,6 +63,52 @@ class Main {
 
     }
 
+    // TODO when we get to the point of documenting how to configure an app a starting point is the 'Config Json Usage:' section in:
+    // https://docs.google.com/document/d/1u190L69DamowN1scP-0vzizdYzrr8lbc8ApS5dN0CoM/edit#
+    public static function helpString(): String {
+        return '
+Accur8 Launcher Tool
+
+    The launchers job is to make sure the app is installed in the local cache and run the app it is configured to run.  
+
+    It will usually be installed (using Accur8 Recipes ie: a8-recipe install a8-scripts) at ~/tools-a8/packages/a8-scripts/a8-launcher.py
+
+Configuration:
+    An app being run by the a8-launcher.py (or a copy/symbolic link of the launcher like a8-zoo) is configured by a .json file which will be alongside the command. 
+    The base filename of the command needs to be the same as the json file. 
+    So if you run the ‘a8-zoo’ launch command it will look for a ‘a8-zoo.json’ sitting alongside the a8-zoo command. 
+    An example of a8-zoo.json will look like:
+        {
+            "kind": "jvm_cli",
+            "mainClass": "a8.zoolander.Main",
+            "organization": "a8",
+            "artifact": "a8-zoolander_2.12",
+            "branch": "master"
+        }
+
+Usage requirements:
+
+    Python 3.4+ (currently Python versions 3.7+ do not work)
+
+
+Usage:
+    --l-version <version> [<args>]
+        Runs the app with the specific version requested.
+
+    --l-resolveOnly
+        Does not run the app.
+        Sets up the inventory file(s) in a8VersionCache (~/a8/versions/cache) which contain app installer config and classpaths to jars.
+    
+    --l-help
+        Does not run the app.
+        Shows this help text.
+
+    [<args>]
+        Run the app passing through whatever arguments are passed in
+        
+';
+    }
+
     public static function main(): Void {
 
         var exitCode = 0;
@@ -84,23 +130,7 @@ class Main {
             Logger.traceEnabled = !config.quiet;
 
             if ( config.showHelp ) {
-                trace('
-
---l-version version   
-   
-    use an explicit version
-
-
---l-resolveOnly
-
-    resolve the version or latest if version is unspecified, this will not run the app
-
-
---l-help
-
-    shows this help text
-
-                    ');
+                Sys.print(helpString());
             } else {
                 var launcher = 
                     new Launcher(

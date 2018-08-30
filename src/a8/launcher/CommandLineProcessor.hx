@@ -29,7 +29,7 @@ class CommandLineProcessor {
             name: "--l-help", 
             parmCount: 0,
             apply: function(config: LaunchConfig, args: Option<String>) {
-                config.showHelp = true;
+                config.showHelp = args.nonEmpty();
             }
         }    ];
 
