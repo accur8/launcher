@@ -149,7 +149,7 @@ class Launcher {
             var user: String = UserConfig.sbtCredentials.get("user");
             var password: String = UserConfig.sbtCredentials.get("password");
 
-            var version = UserConfig.versions.get("versions_version").toOption().getOrElse("1.0.0-20180425_1229_master");
+            var version = UserConfig.versions.get("versions_version").toOption().getOrElse("1.0.0-20200309_1447_master");
 
             var repoUrl = UserConfig.versions.get("versions_repo_url").toOption().getOrElse('https://${user}:${password}@accur8.jfrog.io/accur8/all');
 
