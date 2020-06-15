@@ -146,12 +146,12 @@ class Launcher {
             var exec = new a8.Exec();
             
             // coursier launch -r https://deployer:Eb26fhnWFatdyAdeg84fAQ@accur8.jfrog.io/accur8/all a8:a8-versions_2.12:1.0.0-20180425_1229_master -M a8.versions.apps.Main
-            var user: String = UserConfig.sbtCredentials.get("user");
-            var password: String = UserConfig.sbtCredentials.get("password");
+            // var user: String = UserConfig.sbtCredentials.get("user");
+            // var password: String = UserConfig.sbtCredentials.get("password");
 
-            var version = UserConfig.versions.get("versions_version").toOption().getOrElse("1.0.0-20200309_1447_master");
+            var version = UserConfig.versionsConfig.get("versions_version").toOption().getOrElse("1.0.0-20200309_1447_master");
 
-            var repoUrl = UserConfig.versions.get("versions_repo_url").toOption().getOrElse('https://${user}:${password}@accur8.jfrog.io/accur8/all');
+            var repoUrl = UserConfig.repo_url;
 
             var args = exec.args = [PathOps.programPath().parent() + "/coursier", "launch", "--repository", repoUrl, 'a8:a8-versions_2.12:${version}', "-M", "a8.versions.apps.Main", "--", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
             if ( this.config.explicitVersion.nonEmpty() ) {

@@ -10,7 +10,7 @@ using StringTools;
 using a8.OptionOps;
 
 using tink.CoreApi;
-using a8.types;
+using a8.Types;
 using a8.HaxeOps;
 
 

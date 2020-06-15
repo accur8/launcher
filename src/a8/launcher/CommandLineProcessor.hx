@@ -12,25 +12,29 @@ class CommandLineProcessor {
             parmCount: 1,
             apply: function(config: LaunchConfig, args: Option<String>) {
                 config.explicitVersion = args;
-            }
+            },
+            processed: false
         },{ 
             name: "--l-verbose", 
             parmCount: 0,
             apply: function(config: LaunchConfig, args: Option<String>) {
                 config.quiet = args.isEmpty();
-            }
+            },
+            processed: false
         },{ 
             name: "--l-resolveOnly", 
             parmCount: 0,
             apply: function(config: LaunchConfig, args: Option<String>) {
                 config.resolveOnly = args.nonEmpty();
-            }
+            },
+            processed: false
         },{ 
             name: "--l-help", 
             parmCount: 0,
             apply: function(config: LaunchConfig, args: Option<String>) {
                 config.showHelp = args.nonEmpty();
-            }
+            },
+            processed: false
         }    ];
 
     public function new() {
