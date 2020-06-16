@@ -149,7 +149,7 @@ class Launcher {
             // var user: String = UserConfig.sbtCredentials.get("user");
             // var password: String = UserConfig.sbtCredentials.get("password");
 
-            var version = UserConfig.versionsConfig.get("versions_version").toOption().getOrElse("1.0.0-20200309_1447_master");
+            var version = UserConfig.repoConfig.get("versions_version").toOption().getOrElse("1.0.0-20200615_1710_master");
 
             var repoUrl = UserConfig.repo_url;
 

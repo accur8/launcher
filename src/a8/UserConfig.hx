@@ -12,14 +12,6 @@ class UserConfig {
     //         ;
     // }
 
-
-    @:lazy public static var versionsConfig(default, null): StringMap<String> = {
-        a8.PathOps.userHome()
-            .entry(".a8/versions/config.properties")
-            .readProperties()
-            ;
-    }
-
     @:lazy public static var repoConfig(default, null): StringMap<String> = {
         a8.PathOps.userHome()
             .entry(".a8/repo.properties")
@@ -27,20 +19,24 @@ class UserConfig {
             ;
     }
 
-    @:lazy public static var repo_url(default, null): String = {
-        var v = repoConfig.get("repo_url");
-        
-        var u = repoConfig.get("repo_user");
-        var p = repoConfig.get("repo_password");
-
-        if ( v != null ) {
-            var separator = "://";
-            var split = v.split(separator);
-            var url = split[0] + separator + u + ":" + p + "@" + split[1];
-            url;
-        } else {
-            throw "no default_repo_url defined in ~/.a8/config.properties";
+    static function getRepoProp(name: String): String {
+        var v = repoConfig.get(name);
+        if ( v == null ) {
+            throw "no " + name + " defined in ~/.a8/repo.properties";
         }
+        return v;
+    }
+
+    @:lazy public static var repo_url(default, null): String = {
+        var v = getRepoProp("repo_url");
+        
+        var u = getRepoProp("repo_user");
+        var p = getRepoProp("repo_password");
+
+        var separator = "://";
+        var split = v.split(separator);
+        var url = split[0] + separator + u + ":" + p + "@" + split[1];
+        url;
     }
 
 
