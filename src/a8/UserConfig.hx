@@ -2,6 +2,9 @@ package a8;
 
 
 
+import haxe.Http;
+
+
 @:tink
 class UserConfig {
 
@@ -39,5 +42,19 @@ class UserConfig {
         url;
     }
 
+
+    public static function versionsVersion(): String {
+        var version = UserConfig.repoConfig.get("versions_version");
+        if ( version == null ) 
+            version = versionsVersionFromRepo();
+
+        return version;
+    }
+
+    static function versionsVersionFromRepo(): String {
+        var v = getRepoProp("repo_url");
+        var url = v.substring(0, v.indexOf("/", v.indexOf("://")+1)) + "/versionsVersion";
+        return Http.requestUrl(url);
+    }
 
 }
