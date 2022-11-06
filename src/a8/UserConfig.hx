@@ -3,7 +3,7 @@ package a8;
 
 
 import haxe.Http;
-
+import Sys;
 
 @:tink
 class UserConfig {
@@ -22,7 +22,8 @@ class UserConfig {
             ;
     }
 
-    static function getRepoProp(name: String): String {
+    static function getRepoProp(repoPrefix: String, suffix: String): String {
+        var name = repoPrefix + "_" + suffix;
         var v = repoConfig.get(name);
         if ( v == null ) {
             throw "no " + name + " defined in ~/.a8/repo.properties";
@@ -30,29 +31,45 @@ class UserConfig {
         return v;
     }
 
-    @:lazy public static var repo_url(default, null): String = {
-        var v = getRepoProp("repo_url");
-        
-        var u = getRepoProp("repo_user");
-        var p = getRepoProp("repo_password");
+    static function hasRepoProp(repoPrefix: String, suffix: String): Bool {
+        var name = repoPrefix + "_" + suffix;
+        var v = repoConfig.get(name);
+        return v != null;
+    }
 
-        var separator = "://";
-        var split = v.split(separator);
-        var url = split[0] + separator + u + ":" + p + "@" + split[1];
-        url;
+    public static function repo_url(repoPrefix: String): String {
+        if ( hasRepoProp(repoPrefix, "url") ) {
+
+            var url = getRepoProp(repoPrefix, "url");
+            
+            if ( hasRepoProp(repoPrefix, "user") && hasRepoProp(repoPrefix, "password") ) {
+                var u = getRepoProp(repoPrefix, "user");
+                var p = getRepoProp(repoPrefix, "password");
+
+                var separator = "://";
+                var split = url.split(separator);
+                url = split[0] + separator + u + ":" + p + "@" + split[1];
+            }
+
+            return url;
+        } else if ( repoPrefix == "maven" ) {
+            return "https://repo.maven.apache.org/maven2/";
+        } else {
+            throw "unable to find repo " + repoPrefix;
+        }
     }
 
 
-    public static function versionsVersion(): String {
+    public static function versionsVersion(repoPrefix: String): String {
         var version = UserConfig.repoConfig.get("versions_version");
         if ( version == null ) 
-            version = versionsVersionFromRepo();
+            version = versionsVersionFromRepo(repoPrefix);
 
         return version;
     }
 
-    static function versionsVersionFromRepo(): String {
-        var v = getRepoProp("repo_url");
+    static function versionsVersionFromRepo(repoPrefix: String): String {
+        var v = getRepoProp(repoPrefix, "url");
         var url = v.substring(0, v.indexOf("/", v.indexOf("://")+1)) + "/versionsVersion";
         return Http.requestUrl(url);
     }

@@ -12,6 +12,8 @@ import python.lib.subprocess.Popen;
 import python.lib.Subprocess;
 import python.Lib.PySys;
 import haxe.ds.Option;
+import Sys;
+import a8.Constants;
 
 @:tink
 class Launcher {
@@ -149,11 +151,16 @@ class Launcher {
             // var user: String = UserConfig.sbtCredentials.get("user");
             // var password: String = UserConfig.sbtCredentials.get("password");
 
-            var version = UserConfig.repoConfig.get("versions_version").toOption().getOrElse("1.0.0-20200616_1516_master");
+            var version = UserConfig.repoConfig.get("versions_version").toOption().getOrElse(Constants.a8VersionsVersion);
 
-            var repoUrl = UserConfig.repo_url;
+            var repoPrefix = "repo";
+            if ( jvmlauncher.repo != null )
+                repoPrefix = jvmlauncher.repo;
 
-            var args = exec.args = [PathOps.programPath().parent() + "/coursier", "launch", "--repository", repoUrl, 'a8:a8-versions_2.12:${version}', "-M", "a8.versions.apps.Main", "--", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact];
+            var repoUrl = UserConfig.repo_url(repoPrefix);
+
+            var args = exec.args = [PathOps.programPath().parent() + "/coursier", "launch", "--repository", repoUrl, 'io.accur8:a8-versions_2.13:${version}', "-M", "a8.versions.apps.Main", "--", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact, "--repo", repoPrefix];
+            Sys.println("running -- " + args.join(" "));
             if ( this.config.explicitVersion.nonEmpty() ) {
                 args.push("--version");
                 args.push(this.config.explicitVersion.get());
@@ -165,6 +172,7 @@ class Launcher {
                 args.push(jvmlauncher.version);
             }
             exec.execInline();
+            Sys.println("completed running -- " + args.join(" "));
         }
         var la = resolveJvmLaunchArgs(jvmlauncher, inventoryFile, false);
 

@@ -211,6 +211,7 @@ typedef JvmCliLaunchConfig = {
     // var kind: String;
     var organization: String;
     var artifact: String;
+    @:optional var repo: String;
     @:optional var version: String;
     @:optional var branch: String;
     var mainClass: String;
