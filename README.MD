@@ -1,6 +1,7 @@
 
 
-Sorry for the tech debt, must build with haxe 3.4.7
+Can be built with the most recent haxe version 4.2.5 also was working with 4.0.5
+
 
 
 # Docker
