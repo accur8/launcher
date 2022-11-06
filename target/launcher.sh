@@ -3,7 +3,6 @@
 mkdir -p ~/.a8
 rm -f ~/.a8/repo.properties
 echo "repo_url=${REPO_URL}" >> ~/.a8/repo.properties
-echo "repo_realm=${REPO_REALM}" >> ~/.a8/repo.properties
 echo "repo_user=${REPO_USER}" >> ~/.a8/repo.properties
 echo "repo_password=${REPO_PASSWORD}" >> ~/.a8/repo.properties
 
