@@ -1,7 +1,6 @@
 FROM eclipse-temurin:11
 
 ENV REPO_URL=https://locus.accur8.io/repos/all
-ENV REPO_REALM="Accur8 Repo"
 ENV REPO_USER=
 ENV REPO_PASSWORD=
 
