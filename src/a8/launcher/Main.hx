@@ -8,35 +8,41 @@ import haxe.Json;
 import a8.PyOps;
 import python.Lib;
 import a8.launcher.CommandLineProcessor;
+import Sys;
+import haxe.io.Path;
 
 @:tink
 class Main {
 
-    static function loadConfig(): LaunchConfig {
+    static function loadConfig(commandLineParms: CommandLineParms): LaunchConfig {
 
         var execPath = PathOps.executablePath();
         var appName = execPath.file;
 
         var configExtensions = [".json", ".launcher.json"];
 
-        var possibleConfigFiles = 
-            execPath
-                .symlinkChain()
-                .flatMap([l] => configExtensions.map([e] => l.parent().entry(l.name() + e)))
-                .array()
-                ;
+        var configFile: Path = 
+            if( commandLineParms.launcherJson != null ) {
+                PathOps.path(commandLineParms.launcherJson);
+            } else {
+                var possibleConfigFiles = 
+                    execPath
+                        .symlinkChain()
+                        .flatMap([l] => configExtensions.map([e] => l.parent().entry(l.name() + e)))
+                        .array()
+                        ;
 
-        // trace(possibleConfigFiles);
-
-        var configFile = 
-            possibleConfigFiles
-                .find([f]=>f.exists())
-                ;
+                possibleConfigFiles
+                    .find([f]=>f.exists())
+                    ;
+            }
 
         var config: LaunchConfig = Json.parse(configFile.readText());
 
-        if ( config.quiet == null ) {
-            config.quiet = false;
+        config.commandLineParms = commandLineParms;
+
+        if ( commandLineParms.quiet != null ) {
+            config.quiet = commandLineParms.quiet;
         }
         if ( config.logRollers == null ) {
             config.logRollers = [];
@@ -57,6 +63,10 @@ class Main {
             if ( jvmLaunchConfig.args == null ) 
                 jvmLaunchConfig.args = [];
 
+        }
+
+        if ( commandLineParms.explicitVersion != null ) {
+            config.explicitVersion = commandLineParms.explicitVersion;
         }
 
         return config;
@@ -83,15 +93,20 @@ Configuration:
             "mainClass": "a8.zoolander.Main",
             "organization": "a8",
             "artifact": "a8-zoolander_2.12",
-            "branch": "master"
+            "branch": "master",
+            "repo": "maven"
         }
 
 Usage requirements:
 
-    Python 3.4+ (currently Python versions 3.7+ do not work)
+    Python 3.4+ (currently Python versions 3.7 does not work)
 
 
 Usage:
+
+    --l-launcherJson <launcher.json>
+        override the default launcher json lookup with a specific launcher json file to use
+
     --l-version <version> [<args>]
         Runs the app with the specific version requested.
 
@@ -115,21 +130,19 @@ Usage:
 
         try {
 
+            var commandLineParms = CommandLineProcessor.parse();
+
             var execPath = PathOps.executablePath();
 
             var appName = execPath.file;
 
-            var initialConfig = loadConfig();
+            var config = loadConfig(commandLineParms);
 
             var args = PySys.argv.copy();
-            initialConfig.rawCommandLineArgs = args;
-
-            var clp = new CommandLineProcessor();
-            var config = clp.apply(initialConfig);
 
             Logger.traceEnabled = !config.quiet;
 
-            if ( config.showHelp ) {
+            if ( commandLineParms.showHelp ) {
                 Sys.print(helpString());
             } else {
                 var launcher = 
@@ -158,24 +171,18 @@ typedef LaunchConfig = {
     
     var kind: String;
 
-    @:optional var quiet: Bool;
+    var quiet: Bool;
     @:optional var installDir: String;
     @:optional var logsDir: String;
     @:optional var logRollers: Array<Dynamic>;
     @:optional var logFiles: Bool;
-    @:optional var resolveOnly: Bool;
-    @:optional var showHelp: Bool;
 
     /* all items below are not loaded from the json */
 
     /* ability to explicitly set the version that will run */
-    @:optional var explicitVersion: Option<String>;
+    @:optional var explicitVersion: String;
 
-    /* the command line args with the launcher args are removed */
-    @:optional var resolvedCommandLineArgs: Array<String>;
-
-    /* the command line args before the launcher args are removed */
-    @:optional var rawCommandLineArgs: Array<String>;
+    var commandLineParms: CommandLineParms;
 
 }
 
@@ -199,6 +206,24 @@ typedef LaunchConfig = {
 
 */
 
+
+typedef CommandLineParms = {
+    var programName: String;
+
+    /* the command line args with the launcher args are removed */
+    var resolvedCommandLineArgs: Array<String>;
+
+    /* the command line args before the launcher args are removed */
+    var rawCommandLineArgs: Array<String>;
+
+    var resolveOnly: Bool;
+
+    @:optional var quiet: Bool;
+    @:optional var explicitVersion: String;
+    @:optional var launcherJson: String;    
+    @:optional var showHelp: Bool;
+
+}
 
 typedef JvmLaunchConfig = {
     // var kind: String;

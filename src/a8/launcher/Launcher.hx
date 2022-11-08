@@ -133,8 +133,8 @@ class Launcher {
 
     function resolveJvmCliLaunchArgs(jvmlauncher: JvmCliLaunchConfig): ResolvedLaunch {
         var versionFile = 
-            if ( this.config.explicitVersion.nonEmpty() ) {
-                this.config.explicitVersion.getOrError("") + ".json";
+            if ( this.config.explicitVersion != null ) {
+                this.config.explicitVersion + ".json";
             } else if ( jvmlauncher.branch != null ) {
                 "latest_" + jvmlauncher.branch + ".json";
             } else if ( jvmlauncher.version != null ) {
@@ -143,8 +143,8 @@ class Launcher {
                 throw new Exception("must provide a config with branch or version");
             }
         var inventoryFile = a8VersionsCache.entry(jvmlauncher.organization + "/" + jvmlauncher.artifact + "/" + versionFile);
-        Logger.trace("using inventory file - " + inventoryFile.toString());
-        if ( !inventoryFile.exists() || this.config.resolveOnly ) {
+        logTrace("using inventory file - " + inventoryFile.toString());
+        if ( !inventoryFile.exists() || this.config.commandLineParms.resolveOnly ) {
             var exec = new a8.Exec();
             
             // coursier launch -r https://deployer:Eb26fhnWFatdyAdeg84fAQ@accur8.jfrog.io/accur8/all a8:a8-versions_2.12:1.0.0-20180425_1229_master -M a8.versions.apps.Main
@@ -161,9 +161,9 @@ class Launcher {
 
             var args = exec.args = [PathOps.programPath().parent() + "/coursier", "launch", "--repository", repoUrl, 'io.accur8:a8-versions_2.13:${version}', "-M", "a8.versions.apps.Main", "--", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact, "--repo", repoPrefix];
             Sys.println("running -- " + args.join(" "));
-            if ( this.config.explicitVersion.nonEmpty() ) {
+            if ( this.config.explicitVersion != null ) {
                 args.push("--version");
-                args.push(this.config.explicitVersion.get());
+                args.push(this.config.explicitVersion);
             } else if ( jvmlauncher.branch != null ) {
                 args.push("--branch");
                 args.push(jvmlauncher.branch);
@@ -213,7 +213,7 @@ class Launcher {
             var cmd = 
                 if ( !javaAppNameSymLinkPath.isFile() ) {
                     var javaExec = PyShutil2.which("java");
-                    Logger.trace("creating symlink " + javaExec + " --> " + javaAppNameSymLink);
+                    logTrace("creating symlink " + javaExec + " --> " + javaAppNameSymLink);
                     PyOs2.symlink(javaExec, javaAppNameSymLink);
                     if ( javaAppNameSymLinkPath.isFile() ) {
                         "./" + symlinkName;
@@ -244,7 +244,7 @@ class Launcher {
                 args.push(arg);
             });
 
-        this.config.resolvedCommandLineArgs.iter(function(arg) {
+        this.config.commandLineParms.resolvedCommandLineArgs.iter(function(arg) {
             args.push(arg);
         });
 
@@ -287,7 +287,7 @@ class Launcher {
             else 
                 throw new Exception("unable to resolve config kind " + config.kind);
 
-        if ( this.config.resolveOnly ) {
+        if ( this.config.commandLineParms.resolveOnly ) {
             return 0;
         } else {
 

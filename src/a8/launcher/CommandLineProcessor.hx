@@ -2,57 +2,69 @@ package a8.launcher;
 
 
 import a8.launcher.Main;
+import python.Lib;
 
 @:tink
 class CommandLineProcessor {
 
-    @:lazy var argDefs: Array<ProgramArg> = [
-        { 
-            name: "--l-version", 
-            parmCount: 1,
-            apply: function(config: LaunchConfig, args: Option<String>) {
-                config.explicitVersion = args;
-            },
-            processed: false
-        },{ 
-            name: "--l-verbose", 
-            parmCount: 0,
-            apply: function(config: LaunchConfig, args: Option<String>) {
-                config.quiet = args.isEmpty();
-            },
-            processed: false
-        },{ 
-            name: "--l-resolveOnly", 
-            parmCount: 0,
-            apply: function(config: LaunchConfig, args: Option<String>) {
-                config.resolveOnly = args.nonEmpty();
-            },
-            processed: false
-        },{ 
-            name: "--l-help", 
-            parmCount: 0,
-            apply: function(config: LaunchConfig, args: Option<String>) {
-                config.showHelp = args.nonEmpty();
-            },
-            processed: false
-        }    ];
-
-    public function new() {
+    static function commandLineArgDefs(): Array<ProgramArg> {
+        return [
+            { 
+                name: "--l-version", 
+                parmCount: 1,
+                apply: function(config: CommandLineParms, args: Option<String>) {
+                    config.explicitVersion = args.orNull();
+                },
+                processed: false
+            },{ 
+                name: "--l-verbose", 
+                parmCount: 0,
+                apply: function(config: CommandLineParms, args: Option<String>) {
+                    config.quiet = !args.nonEmpty();
+                },
+                processed: false
+            },{ 
+                name: "--l-launcherJson", 
+                parmCount: 1,
+                apply: function(config: CommandLineParms, args: Option<String>) {
+                    config.launcherJson = args.orNull();
+                },
+                processed: false
+            },{ 
+                name: "--l-resolveOnly", 
+                parmCount: 0,
+                apply: function(config: CommandLineParms, args: Option<String>) {
+                    config.resolveOnly = args.nonEmpty();
+                },
+                processed: false
+            },{ 
+                name: "--l-help", 
+                parmCount: 0,
+                apply: function(config: CommandLineParms, args: Option<String>) {
+                    config.showHelp = args.nonEmpty();
+                },
+                processed: false
+            }    
+        ];
     }
 
-    public function apply(initialConfig: LaunchConfig): LaunchConfig {
-        var config = Reflect.copy(initialConfig);
+    public static function parse(): CommandLineParms {
+
+        var tempArgs = PySys.argv.copy();
+        tempArgs.reverse();
 
         var newArgs = [];
-        config.resolvedCommandLineArgs = newArgs;
-        var temp = initialConfig.rawCommandLineArgs.copy();
+        var config = {
+            programName: tempArgs.pop(),
+            rawCommandLineArgs: PySys.argv.copy(),
+            resolvedCommandLineArgs: newArgs,
+            resolveOnly: false
+        };
 
-        // drop the first arg since it is the program name
-        temp.reverse();
-        temp.pop();
+        var argDefs = commandLineArgDefs();
 
-        while ( temp.length > 0 ) {
-            var a = temp.pop();
+        while ( tempArgs.length > 0 ) {
+            var a = tempArgs.pop();
             var argDef: ProgramArg = argDefs.find([ad] => ad.name == a);
             if ( argDef == null ) {
                 if ( a.startsWith("--l-") ) {
@@ -62,7 +74,7 @@ class CommandLineProcessor {
             } else {
                 var parms = 
                     if ( argDef.parmCount == 0 ) Some(argDef.name);
-                    else if ( argDef.parmCount == 1 ) Some(temp.pop());
+                    else if ( argDef.parmCount == 1 ) Some(tempArgs.pop());
                     else throw new Exception("can only handle parmCount of 0 or 1");
                 argDef.apply(config, parms);
                 argDef.processed = true;
@@ -87,6 +99,6 @@ class CommandLineProcessor {
 typedef ProgramArg = {
     var name: String;
     var parmCount: Int;
-    var apply: LaunchConfig -> Option<String> -> Void;
+    var apply: CommandLineParms -> Option<String> -> Void;
     @:optional var processed: Bool;
 }
