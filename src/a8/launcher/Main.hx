@@ -110,6 +110,9 @@ Usage:
     --l-version <version> [<args>]
         Runs the app with the specific version requested.
 
+    --l-verbose
+        turn on more verbose logging
+
     --l-resolveOnly
         Does not run the app.
         Sets up the inventory file(s) in a8VersionCache (~/a8/versions/cache) which contain app installer config and classpaths to jars.
