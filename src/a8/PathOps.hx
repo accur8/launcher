@@ -141,8 +141,16 @@ class PathOps {
         return PlatformOps.instance.isFile(path);
     }
 
+    public static function isLink(path: Path): Bool {
+        return PlatformOps.instance.isSymlink(path);
+    }
+
     public static function isDir(path: Path): Bool {
         return sys.FileSystem.isDirectory(path.toString());
+    }
+
+    public static function realPath(path: Path): Path {
+        return PathOps.path(realPathStr(path));
     }
 
     public static function realPathStr(path: Path): String {
@@ -171,9 +179,14 @@ class PathOps {
     }
 
     public static function entry(dir: Path, name: String): Path {
+        return subpath(dir, name);
+    }
+
+    public static function subpath(dir: Path, name: String): Path {
         var separator = if (dir.backslash) "" else "/";
         return new Path(dir.toString() + separator + name);
     }
+
 
     public static function outputStream(p: Path): a8.Streams.OutputStream {
         return StreamOps.fileOutputStream(realPathStr(p));
@@ -200,9 +213,21 @@ class PathOps {
             }
     }
 
+    public static function deleteTree(path: Path): Void {
+        if ( path.exists() && path.isDir() ) {
+            var entries = entries(path);
+            for (entry in entries) {
+                if (entry.isLink() || entry.isFile()) {
+                    sys.FileSystem.deleteFile(entry.toString());
+                } else if (entry.isDir()) {
+                    entry.deleteTree();
+                } else {
+                    sys.FileSystem.deleteFile(entry.toString());
+                }
+            }
+            sys.FileSystem.deleteDirectory(path.toString());
+        }
+    }
 }
-
-
-
 
 

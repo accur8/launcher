@@ -1,4 +1,14 @@
 
+
+== nix downloader ==
+
+  * properly set version in inventory json
+  * better strategy for launcher-work directory instead of creating in the current directory
+
+
+
+
+
 == bugs ==
 
   * double ctl + C needed to terminate

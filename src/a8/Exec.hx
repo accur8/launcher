@@ -5,8 +5,6 @@ package a8;
 import python.lib.Subprocess;
 import a8.Streams;
 
-
-
 @:tink
 class Exec {
 
@@ -14,7 +12,6 @@ class Exec {
     public var cwd: Option<String> = None;
     public var env: Option<Map<String,String>> = None;
     public var failOnNonZeroExitCode: Bool = true;
-    public var executable: Option<String> = None;
 
     public function new() {
     }
@@ -43,6 +40,21 @@ class Exec {
     }
 
     /**
+      *  Will run the process waiting til completion capturing stdout
+      *  and throwing an excpetion on any non-empty data on stderr 
+      *  or a non-zero exit code
+      */
+    public function execCaptureStdout(): String {
+        var saveFailOnNonZeroExitCode = this.failOnNonZeroExitCode;
+        this.failOnNonZeroExitCode = true;
+        var result = execCapture();
+        if ( result.stderr.length != 0 ) {
+            a8.Exception.thro('non-empty stderr while executing -- ${asCommandLine()} -- ${result.stderr}');
+        }
+        return result.stdout;
+    }
+
+    /**
       *  Will run the process waiting til completion capturing stdout and stderr to separate strings
       */
     public function execCapture(): ExecCaptureResult {
@@ -51,7 +63,7 @@ class Exec {
             new python.lib.subprocess.Popen(
                 args, 
                 null, 
-                executable.getOrElse(args[0]), 
+                args[0], 
                 null, 
                 Subprocess.PIPE, 
                 Subprocess.PIPE, 

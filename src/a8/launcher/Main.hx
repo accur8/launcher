@@ -140,6 +140,8 @@ Usage:
             var appName = execPath.file;
 
             var config = loadConfig(commandLineParms);
+            var configD: Dynamic = config;
+            configD.name = appName;
 
             var args = PySys.argv.copy();
 
@@ -209,7 +211,6 @@ typedef LaunchConfig = {
 
 */
 
-
 typedef CommandLineParms = {
     var programName: String;
 
@@ -237,14 +238,24 @@ typedef JvmLaunchConfig = {
 
 typedef JvmCliLaunchConfig = {
     // var kind: String;
+    var name: String;
     var organization: String;
     var artifact: String;
+    var mainClass: String;
     @:optional var repo: String;
     @:optional var version: String;
     @:optional var branch: String;
-    var mainClass: String;
     @:optional var jvmArgs: Array<String>;
     @:optional var args: Array<String>;
+    @:optional var webappExplode: Bool;
+    @:optional var javaVersion: String;
+    /*
+     * coursier
+     * nix
+     * auto (default) use nix if it is available otherwise coursier
+     */
+    @:optional var dependencyDownloader: String; 
+
 }
 
 typedef ArgsLaunchConfig = {

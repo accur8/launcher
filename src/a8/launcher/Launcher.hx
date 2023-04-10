@@ -1,6 +1,7 @@
 package a8.launcher;
 
 
+import a8.launcher.DependencyDownloader;
 import a8.launcher.Main;
 import a8.launcher.LogRoller;
 import a8.launcher.PipedStream;
@@ -18,7 +19,7 @@ import a8.Constants;
 @:tink
 class Launcher {
 
-    var config: LaunchConfig = _;
+    public var config: LaunchConfig = _;
     public var appName: String = _;
 
     var initialArgs: Array<String> = _;
@@ -75,6 +76,40 @@ class Launcher {
     }
 
     private function _log(msg: String, pipe: PipedStream): Void {
+    }
+
+    function resolveAutoDependencyDownloaderName(): String {
+        try {
+            var exec = new a8.Exec();
+            exec.args = ["nix","--version"];
+            exec.execInline();
+            return "nix";
+        } catch (e: Dynamic) {
+            return "coursier";
+        }
+    }
+
+    function resolveDependencyDownloader(dependencyDownloaderName: String): DependencyDownloader {
+        if ( dependencyDownloaderName == null ) {
+            dependencyDownloaderName = "auto";
+        }
+        dependencyDownloaderName = dependencyDownloaderName.toLowerCase();
+
+        if ( dependencyDownloaderName == "auto" ) {
+            dependencyDownloaderName = resolveAutoDependencyDownloaderName();
+            logTrace("resolving auto dependencyDownloader to " + dependencyDownloaderName);
+        }
+        
+        var dependencyDownloader: DependencyDownloader;
+        if ( dependencyDownloaderName == "coursier" ) {
+            dependencyDownloader = new CoursierDependencyDownloader();
+        } else if ( dependencyDownloaderName == "nix" ) {
+            dependencyDownloader = new NixDependencyDownloader();
+        } else {
+            throw "unable to resolve DependencyDownloader named " + dependencyDownloaderName;
+        }
+
+        return dependencyDownloader;
     }
 
     function archiveOldLogs(): Void {
@@ -145,34 +180,8 @@ class Launcher {
         var inventoryFile = a8VersionsCache.entry(jvmlauncher.organization + "/" + jvmlauncher.artifact + "/" + versionFile);
         logTrace("using inventory file - " + inventoryFile.toString());
         if ( !inventoryFile.exists() || this.config.commandLineParms.resolveOnly ) {
-            var exec = new a8.Exec();
-            
-            // coursier launch -r https://deployer:Eb26fhnWFatdyAdeg84fAQ@accur8.jfrog.io/accur8/all a8:a8-versions_2.12:1.0.0-20180425_1229_master -M a8.versions.apps.Main
-            // var user: String = UserConfig.sbtCredentials.get("user");
-            // var password: String = UserConfig.sbtCredentials.get("password");
-
-            var version = UserConfig.repoConfig.get("versions_version").toOption().getOrElse(Constants.a8VersionsVersion);
-
-            var repoPrefix = "repo";
-            if ( jvmlauncher.repo != null )
-                repoPrefix = jvmlauncher.repo;
-
-            var repoUrl = UserConfig.repo_url(repoPrefix);
-
-            var args = exec.args = [PathOps.programPath().parent() + "/coursier", "launch", "--repository", repoUrl, 'io.accur8:a8-versions_2.13:${version}', "-M", "a8.versions.apps.Main", "--", "resolve", "--organization", jvmlauncher.organization, "--artifact", jvmlauncher.artifact, "--repo", repoPrefix];
-            Sys.println("running -- " + args.join(" "));
-            if ( this.config.explicitVersion != null ) {
-                args.push("--version");
-                args.push(this.config.explicitVersion);
-            } else if ( jvmlauncher.branch != null ) {
-                args.push("--branch");
-                args.push(jvmlauncher.branch);
-            } else if ( jvmlauncher.version != null ) {
-                args.push("--version");
-                args.push(jvmlauncher.version);
-            }
-            exec.execInline();
-            Sys.println("completed running -- " + args.join(" "));
+            var dependencyDownloader: DependencyDownloader = resolveDependencyDownloader(jvmlauncher.dependencyDownloader);    
+            dependencyDownloader.download(this, jvmlauncher, inventoryFile);
         }
         var la = resolveJvmLaunchArgs(jvmlauncher, inventoryFile, false);
 

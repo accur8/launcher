@@ -33,6 +33,7 @@ interface Platform {
     function spawn(threadName: String, fn: Void->Void): Void;
     function moveTo(source: Path, target: Path): Void;
     function absPath(path: Path): Path;
+    function isSymlink(path: Path): Bool;
 
 }
 
@@ -72,6 +73,11 @@ class PythonPlatform extends AbstractPlatform implements Platform {
 
     public function new() {
     }
+
+    public function isSymlink(path: Path): Bool {
+        return python.lib.os.Path.islink(path.toString());
+    }
+
 
     public function absPath(path: Path): Path {
         return PathOps.path(python.lib.os.Path.normpath(python.lib.os.Path.abspath(path.toString())));

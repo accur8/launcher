@@ -1,8 +1,34 @@
 package a8;
 
 
-import python.lib.threading.Thread;
 
+import python.lib.threading.Thread;
+import python.Bytearray;
+
+
+@:pythonImport("urllib.request")
+extern class PyUrllibRequest {
+
+    public static function urlopen(url:Dynamic, data:Dynamic): Dynamic;
+
+}
+
+class PyHttpAssist {
+
+    public static function httpPost(url: String, postBody: Dynamic): String {
+        var requestBodyStr = haxe.Json.stringify(postBody);
+        var requestBody = new Bytearray(requestBodyStr, "utf8");
+        var bytesResponse = PyUrllibRequest.urlopen(url, requestBody).read();
+        var responseBody = new Bytearray(bytesResponse).decode("utf8");
+        return responseBody;
+    }
+
+    public static function httpGet(url: String): String {
+        var bytesResponse = PyUrllibRequest.urlopen(url, null).read();
+        return new Bytearray(bytesResponse).decode("utf8");
+    }
+
+}
 
 @:pythonImport("shutil")
 extern class PyShutil2 {
