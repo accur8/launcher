@@ -97,9 +97,51 @@ class NixDependencyDownloader implements DependencyDownloader {
                 }
             };
 
-        installInventoryFile.writeText(haxe.Json.stringify(inventory));
+        installInventoryFile.writeText(haxe.format.JsonPrinter.print(inventory, null, "    "));
 
     }
+}
+
+
+typedef RequestParms = {
+    var name: String;
+    var mainClass: String;
+    @:optional var jvmArgs: Array<String>;
+    @:optional var args: Array<String>;
+    @:optional var repo: RepoConfigPrefix;
+    var organization: String;
+    var artifact: String;
+    @:optional var version: String;
+    @:optional var branch: String;
+    @:optional var webappExplode: Boolean;
+    @:optional var javaVersion: String;
+
+    /** this is ignored */
+    @:optional var dependencyDownloader: String;
+}
+
+typedef Artifact = {
+    var url: String;
+    var nixSha256: String;
+    var organization: String;
+    var module: String;
+    var version: String;
+    var m2RepoPath: String;
+    var filename: String;
+}
+
+typedef FileContent = {
+    var name: String;
+    var content: String;
+}
+
+
+typedef InstallerDotNixResponse = {
+    var request: RequestParms;
+    var resolutionResponse: DependencyTreeResponse;
+    var resolvedVersion: String;
+    var artifacts: Array<Artifact>;
+    var files: Array<FileContent>;
 }
 
 typedef NixArtifact = {

@@ -1,6 +1,6 @@
 
 
-Can be built with the most recent haxe version 4.2.5 also was working with 4.0.5
+Must be built with the most recent haxe version 4.2.5
 
 
 

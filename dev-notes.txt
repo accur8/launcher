@@ -1,11 +1,13 @@
 
 
+
+
 == nix downloader ==
 
   * properly set version in inventory json
   * better strategy for launcher-work directory instead of creating in the current directory
 
-
+  * have launcher provide nix files directly and just get launcher-config.nix from the server (more secure)
 
 
 
