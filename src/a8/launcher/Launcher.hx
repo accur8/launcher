@@ -75,16 +75,10 @@ class Launcher {
         }
     }
 
-    private function _log(msg: String, pipe: PipedStream): Void {
-    }
-
     function resolveAutoDependencyDownloaderName(): String {
-        try {
-            var exec = new a8.Exec();
-            exec.args = ["nix","--version"];
-            exec.execInline();
+        if ( PathOps.path("/nix/var/nix/profiles/default/bin/nix").exists() ) {
             return "nix";
-        } catch (e: Dynamic) {
+        } else {
             return "coursier";
         }
     }
@@ -181,6 +175,7 @@ class Launcher {
         logTrace("using inventory file - " + inventoryFile.toString());
         if ( !inventoryFile.exists() || this.config.commandLineParms.resolveOnly ) {
             var dependencyDownloader: DependencyDownloader = resolveDependencyDownloader(jvmlauncher.dependencyDownloader);    
+            logTrace("using {dependencyDownloader.name()} dependency downloader");
             dependencyDownloader.download(this, jvmlauncher, inventoryFile);
         }
         var la = resolveJvmLaunchArgs(jvmlauncher, inventoryFile, false);

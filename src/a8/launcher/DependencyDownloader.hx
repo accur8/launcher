@@ -11,14 +11,21 @@ import haxe.ds.Option;
 using a8.PathOps;
 
 interface DependencyDownloader {
+    public function name(): String;
     public function download(launcher: Launcher, jvmlauncher: JvmCliLaunchConfig, installInventoryFile: Path): Void;
 }
 
 
 
 class CoursierDependencyDownloader implements DependencyDownloader {
+    
     public function new() {
     }
+
+    public function name(): String {
+        return "coursier";
+    }
+
     public function download(launcher: Launcher, jvmlauncher: JvmCliLaunchConfig, installInventoryFile: Path): Void {
 
         var exec = new a8.Exec();
@@ -51,12 +58,20 @@ class CoursierDependencyDownloader implements DependencyDownloader {
         Sys.println("completed running -- " + args.join(" "));
 
     }
+
 }
 
 
 class NixDependencyDownloader implements DependencyDownloader {
+
     public function new() {
     }
+
+
+    public function name(): String {
+        return "nix";
+    }
+
     public function download(launcher: Launcher, jvmlauncher: JvmCliLaunchConfig, installInventoryFile: Path): Void {
 
         var requestBody: Dynamic = jvmlauncher;
@@ -76,7 +91,7 @@ class NixDependencyDownloader implements DependencyDownloader {
         javaLauncherTemplatePath.writeText('#!/bin/bash\n\nexec _out_/bin/_name_j -cp _out_/lib/*:. _args_ "$@"\n');
 
         var exec = new a8.Exec();
-        exec.args = ["nix-build", "--out-link", "build", "-E", "with import <nixpkgs> {}; (callPackage ./launcher {})"];
+        exec.args = ["/nix/var/nix/profiles/default/bin/nix-build", "--out-link", "build", "-E", "with import <nixpkgs> {}; (callPackage ./launcher {})"];
         exec.cwd = Some(workDir.toString());
         exec.execInline();
 
