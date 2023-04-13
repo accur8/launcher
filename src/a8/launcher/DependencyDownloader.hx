@@ -114,15 +114,12 @@ class NixDependencyDownloader implements DependencyDownloader {
 
         installInventoryFile.writeText(haxe.Json.stringify(inventory));
 
-        if ( jvmlauncher.version == null || jvmlauncher.version == "latest" ) {
-            var login = python.lib.Os.environ.get("USER");
-            var gcRootName = '/nix/var/nix/gcroots/per-user/${login}/${jvmlauncher.organization}-${jvmlauncher.artifact}-${installInventoryFile.basename()}';
-            // add gc root
-            PathOps.path(gcRootName).deleteIfExists();
-            Logger.trace('creating nix gc root ${gcRootName} --> ${installInventoryFile}');
-            PyOs2.symlink(installInventoryFile.toString(), gcRootName);
-
-        }
+        var login = python.lib.Os.environ.get("USER");
+        var gcRootName = '/nix/var/nix/gcroots/per-user/${login}/${jvmlauncher.organization}-${jvmlauncher.artifact}-${installInventoryFile.basename()}';
+        // add gc root
+        PathOps.path(gcRootName).deleteIfExists();
+        Logger.trace('creating nix gc root ${gcRootName} --> ${installInventoryFile}');
+        PyOs2.symlink(installInventoryFile.toString(), gcRootName);
 
     }
 }
