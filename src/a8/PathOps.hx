@@ -218,7 +218,19 @@ class PathOps {
             }
     }
 
+    public static function deleteIfExists(path: Path): Void {
+        if ( path.exists() ) {
+            path.delete();
+        }
+    }
+
+    public static function delete(path: Path): Void {
+        Logger.trace('delete(${path})');
+        sys.FileSystem.deleteFile(path.toString());
+    }
+
     public static function deleteTree(path: Path): Void {
+        Logger.trace('deleteTree(${path})');
         if ( path.exists() && path.isDir() ) {
             var entries = entries(path);
             for (entry in entries) {

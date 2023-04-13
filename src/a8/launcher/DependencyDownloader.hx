@@ -80,7 +80,7 @@ class NixDependencyDownloader implements DependencyDownloader {
 
         var javaLauncherInstallerDotNixContent = PyHttpAssist.httpPost("https://locus.accur8.io/api/javaLauncherInstallerDotNix", requestBody);
 
-        var workDir: Path = PathOps.path("launcher-work").realPath();
+        var workDir: Path = installInventoryFile.parent().subpath(installInventoryFile.basename() + "-work").realPath();
         var launcherDir = workDir.subpath("launcher");
         launcherDir.makeDirectories();
 
@@ -113,6 +113,16 @@ class NixDependencyDownloader implements DependencyDownloader {
             };
 
         installInventoryFile.writeText(haxe.Json.stringify(inventory));
+
+        if ( jvmlauncher.version == null || jvmlauncher.version == "latest" ) {
+            var login = python.lib.Os.environ.get("USER");
+            var gcRootName = '/nix/var/nix/gcroots/per-user/${login}/${jvmlauncher.organization}-${jvmlauncher.artifact}-${installInventoryFile.basename()}';
+            // add gc root
+            PathOps.path(gcRootName).deleteIfExists();
+            Logger.trace('creating nix gc root ${gcRootName} --> ${installInventoryFile}');
+            PyOs2.symlink(installInventoryFile.toString(), gcRootName);
+
+        }
 
     }
 }
