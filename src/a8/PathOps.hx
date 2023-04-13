@@ -162,6 +162,11 @@ class PathOps {
     }
 
     public static function writeText(path: Path, text: String): Void {
+        Logger.trace('writing ${path}');
+        if ( !path.parent().exists() ) {
+            Logger.trace('creating intermediate directories ${path.parent()}');
+            path.parent().makeDirectories();
+        }
         File.saveContent(path.toString(), text);
     }
 

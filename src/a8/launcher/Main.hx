@@ -14,6 +14,8 @@ import haxe.io.Path;
 @:tink
 class Main {
 
+    static var traceLog: String -> Void;
+
     static function loadConfig(commandLineParms: CommandLineParms): LaunchConfig {
 
         var execPath = PathOps.executablePath();
