@@ -114,6 +114,7 @@ class NixDependencyDownloader implements DependencyDownloader {
 
         installInventoryFile.writeText(haxe.Json.stringify(inventory));
 
+        // create nix GC root
         var login = python.lib.Os.environ.get("USER");
         var gcRootName = '/nix/var/nix/gcroots/per-user/${login}/${jvmlauncher.organization}-${jvmlauncher.artifact}-${installInventoryFile.basename()}';
         // add gc root
