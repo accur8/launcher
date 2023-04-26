@@ -175,7 +175,7 @@ class Launcher {
         logTrace("using inventory file - " + inventoryFile.toString());
         if ( !inventoryFile.exists() || this.config.commandLineParms.resolveOnly ) {
             var dependencyDownloader: DependencyDownloader = resolveDependencyDownloader(jvmlauncher.dependencyDownloader);    
-            logTrace("using {dependencyDownloader.name()} dependency downloader");
+            logTrace("using " + dependencyDownloader.name() + " dependency downloader");
             dependencyDownloader.download(this, jvmlauncher, inventoryFile);
         }
         var la = resolveJvmLaunchArgs(jvmlauncher, inventoryFile, false);
