@@ -2,7 +2,7 @@
   "kind": "jvm_cli",
   "mainClass": "a8.versions.apps.Main",
   "organization": "io.accur8",
-  "artifact": "a8-versions_2.13",
+  "artifact": "a8-versions_3",
   "branch": "master",
-  "repo": "maven"
+  "repo": "repo"
 }

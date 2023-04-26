@@ -51,6 +51,13 @@ extern class PyOs2 {
 }
 
 
+@:pythonImport("os.path")
+extern class PyPath {
+
+    public static function realpath(src: String): String;
+
+}
+
 @:pythonImport("sched")
 extern class PySched {
 

@@ -154,7 +154,8 @@ class PathOps {
     }
 
     public static function realPathStr(path: Path): String {
-        return sys.FileSystem.fullPath(path.toString());
+        return PyOps.PyPath.realpath(path.toString());
+        // return sys.FileSystem.fullPath(path.toString());
     }
 
     public static function writeBytes(path: Path, bytes: Bytes): Void {

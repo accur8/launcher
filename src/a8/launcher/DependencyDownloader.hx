@@ -97,9 +97,6 @@ class NixDependencyDownloader implements DependencyDownloader {
 
         var classath = [for (p in workDir.subpath("build/lib").entries()) p.realPathStr()];
 
-        // cleanup work directory
-        workDir.deleteTree();
-
         var inventory: InstallInventory = 
             {
                 classpath: classath,
@@ -112,15 +109,28 @@ class NixDependencyDownloader implements DependencyDownloader {
                 }
             };
 
-        installInventoryFile.writeText(haxe.Json.stringify(inventory));
+        installInventoryFile.writeText(haxe.Json.stringify(inventory, null, "    "));
+
+        var installInventoryFileNixDrv = PathOps.path(installInventoryFile.toString() + ".drv");
+        var nixDrvPath = workDir.subpath("build").realPath();
 
         // create nix GC root
         var login = python.lib.Os.environ.get("USER");
+
         var gcRootName = '/nix/var/nix/gcroots/per-user/${login}/${jvmlauncher.organization}-${jvmlauncher.artifact}-${installInventoryFile.basename()}';
+
         // add gc root
+
+        Logger.trace('creating link from inventory file to nix derivation ${installInventoryFileNixDrv} --> ${nixDrvPath}');
+        installInventoryFileNixDrv.deleteIfExists();
+        PyOs2.symlink(nixDrvPath.toString(), installInventoryFileNixDrv.toString());
+
+        Logger.trace('creating nix gc root ${gcRootName} --> ${installInventoryFileNixDrv}');
         PathOps.path(gcRootName).deleteIfExists();
-        Logger.trace('creating nix gc root ${gcRootName} --> ${installInventoryFile}');
-        PyOs2.symlink(installInventoryFile.toString(), gcRootName);
+        PyOs2.symlink(installInventoryFileNixDrv.toString(), gcRootName);
+
+        // cleanup work directory
+        workDir.deleteTree();
 
     }
 }
