@@ -30,6 +30,12 @@ class PyHttpAssist {
 
 }
 
+@:pythonImport("urllib.parse")
+extern class PyUrllibParse {
+    public static function urlparse(urlStr: String): Dynamic;
+    public static function urlunparse(urlParseTuple: Dynamic): String;
+}
+
 @:pythonImport("shutil")
 extern class PyShutil2 {
 

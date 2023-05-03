@@ -73,19 +73,14 @@ class NixDependencyDownloader implements DependencyDownloader {
     }
 
     public function download(launcher: Launcher, jvmlauncher: JvmCliLaunchConfig, installInventoryFile: Path): Void {
-
-        var requestBody: Dynamic = jvmlauncher;
-
-        launcher.logTrace("javaLauncherInstallerDotNix -- " + haxe.Json.stringify(requestBody));
-
-        var javaLauncherInstallerDotNixContent = PyHttpAssist.httpPost("https://locus.accur8.io/api/javaLauncherInstallerDotNix", requestBody);
-
         var workDir: Path = installInventoryFile.parent().subpath(installInventoryFile.basename() + "-work").realPath();
         var launcherDir = workDir.subpath("launcher");
         launcherDir.makeDirectories();
 
+        var nixBuildDescription = fetchNixBuildDescription(launcher, jvmlauncher);
+
         var defaultDotNixPath = launcherDir.subpath("default.nix");
-        defaultDotNixPath.writeText(javaLauncherInstallerDotNixContent);
+        defaultDotNixPath.writeText(nixBuildDescription.defaultDotNixContents);
 
         var javaLauncherTemplatePath = launcherDir.subpath("java-launcher-template");
         javaLauncherTemplatePath.writeText('#!/bin/bash\n\nexec _out_/bin/_name_j -cp _out_/lib/*:. _args_ "$@"\n');
@@ -103,7 +98,7 @@ class NixDependencyDownloader implements DependencyDownloader {
                 appInstallerConfig: {
                     groupId: jvmlauncher.organization,
                     artifactId: jvmlauncher.artifact,
-                    version: jvmlauncher.version,
+                    version: nixBuildDescription.version,
                     libDirKind: "nix",
                     webappExplode: jvmlauncher.webappExplode
                 }
@@ -120,6 +115,7 @@ class NixDependencyDownloader implements DependencyDownloader {
         var gcRootName = '/nix/var/nix/gcroots/per-user/${login}/${jvmlauncher.organization}-${jvmlauncher.artifact}-${installInventoryFile.basename()}';
 
         // add gc root
+        Logger.trace('resolvedVersion is ${nixBuildDescription.version}');
 
         Logger.trace('creating link from inventory file to nix derivation ${installInventoryFileNixDrv} --> ${nixDrvPath}');
         installInventoryFileNixDrv.deleteIfExists();
@@ -133,6 +129,60 @@ class NixDependencyDownloader implements DependencyDownloader {
         workDir.deleteTree();
 
     }
+
+    function fetchNixBuildDescription(launcher: Launcher, jvmlauncher: JvmCliLaunchConfig): {version: String, defaultDotNixContents: String} {
+
+        var repoUrl = {
+            var url = UserConfig.repo_url("repo");
+            var p = PyUrllibParse.urlparse(url);
+            var result = p.scheme + "://" + p.netloc;
+            launcher.logTrace("repoApiUrl is " + result);
+            result;
+        }
+
+        function fetchNixBuildDescriptionNew(): {version: String, defaultDotNixContents: String} {
+
+            var requestBody: Dynamic = jvmlauncher;
+
+            launcher.logTrace("nixBuildDescription -- " + haxe.Json.stringify(requestBody));
+
+            var nixBuildDescriptionResponseStr = PyHttpAssist.httpPost("https://locus2.accur8.io/api/nixBuildDescription", requestBody);
+            var nixBuildDescription: NixBuildDescription = haxe.Json.parse(nixBuildDescriptionResponseStr);
+
+            var defaultDotNixContents =
+                nixBuildDescription.files.filter(f -> f.filename == "default.nix").shift().contents;
+
+            return {
+                version: nixBuildDescription.resolvedVersion,
+                defaultDotNixContents: defaultDotNixContents,
+            };
+
+        }
+
+        function fetchNixBuildDescriptionLegacy(): {version: String, defaultDotNixContents: String} {
+
+            var requestBody: Dynamic = jvmlauncher;
+
+            launcher.logTrace("javaLauncherInstallerDotNix -- " + haxe.Json.stringify(requestBody));
+
+            var defaultDotNixContents = PyHttpAssist.httpPost("https://locus2.accur8.io/api/javaLauncherInstallerDotNix", requestBody);
+
+            return {
+                version: "",
+                defaultDotNixContents: defaultDotNixContents,
+            };
+
+        }
+
+        try {
+            return fetchNixBuildDescriptionNew();
+        } catch (e) {
+            Logger.trace("/api/nixBuildDescription failed will use legacy api");
+            return fetchNixBuildDescriptionLegacy();
+        }
+
+    }
+
 }
 
 typedef NixArtifact = {
@@ -149,3 +199,30 @@ typedef ArtifactResponse = {
     var url: String;
     var checksums: Array<String>;
 }
+
+typedef NixBuildDescription = {
+    var files: Array<FileContents>;
+    var resolvedVersion: String;
+    var resolutionResponse: ResolutionResponse;
+}
+
+typedef ResolutionResponse = {
+    var request: Dynamic;
+    var version: String;
+    var repoUrl: String;
+    var artifacts: Array<Artifact>;
+}
+
+typedef Artifact = {
+    var url: String;
+    var organization: String;
+    var module: String;
+    var version: String;
+    var extension: String;
+}
+
+typedef FileContents = {
+    var filename: String;
+    var contents: String;
+}
+
