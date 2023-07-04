@@ -34,7 +34,7 @@ class CoursierDependencyDownloader implements DependencyDownloader {
         // var user: String = UserConfig.sbtCredentials.get("user");
         // var password: String = UserConfig.sbtCredentials.get("password");
 
-        var version = UserConfig.repoConfig.get("versions_version").toOption().getOrElse(Constants.a8VersionsVersion);
+        var version = UserConfig.getRepoConfig().get("versions_version").toOption().getOrElse(Constants.a8VersionsVersion);
 
         var repoPrefix = "repo";
         if ( jvmlauncher.repo != null )

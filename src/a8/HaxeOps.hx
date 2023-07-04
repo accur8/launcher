@@ -56,6 +56,16 @@ class HaxeOps {
         return isHaxeIdentifierFirstChar(ch) || isDigit(ch);
     }
 
+    public static function mapMerge<K, V>(a: Map<K, V>, b: Map<K, V>) {
+        final newMap = a;
+    
+        for (key => value in b) {
+            newMap[key] = value;
+        }
+    
+        return newMap;
+    }
+    
 }
 
 

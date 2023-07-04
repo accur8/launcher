@@ -15,16 +15,41 @@ class UserConfig {
     //         ;
     // }
 
-    @:lazy public static var repoConfig(default, null): StringMap<String> = {
-        a8.PathOps.userHome()
-            .entry(".a8/repo.properties")
-            .readProperties()
-            ;
+    static var _repoConfig: StringMap<String>;
+
+    static function loadRepoConfig(): Map<String, String> {
+        var defaults:Map<String, String> = 
+            [
+                "repo_url" => "https://locus.accur8.net/repos/all",
+                "maven_url" => "https://repo.maven.apache.org/maven2/"
+            ];
+        var userProps =
+            a8.PathOps.userHome()
+                .entry(".a8/repo.properties")
+                .readProperties()
+                ;
+        var etcProps = 
+            a8.PathOps.userHome()
+                .entry("/etc/a8-repo.properties")
+                .readProperties()
+                ;
+        var m1 = HaxeOps.mapMerge(defaults, etcProps);
+        var m2 = HaxeOps.mapMerge(m1, userProps);
+        // trace("boom");
+        // trace(m2);
+        return m2;
+    }
+
+    public static function getRepoConfig(): StringMap<String> {
+        if ( _repoConfig == null ) {
+            _repoConfig = loadRepoConfig();
+        }
+        return _repoConfig;
     }
 
     static function getRepoProp(repoPrefix: String, suffix: String): String {
         var name = repoPrefix + "_" + suffix;
-        var v = repoConfig.get(name);
+        var v = getRepoConfig().get(name);
         if ( v == null ) {
             throw "no " + name + " defined in ~/.a8/repo.properties";
         }
@@ -33,7 +58,7 @@ class UserConfig {
 
     static function hasRepoProp(repoPrefix: String, suffix: String): Bool {
         var name = repoPrefix + "_" + suffix;
-        var v = repoConfig.get(name);
+        var v = getRepoConfig().get(name);
         return v != null;
     }
 
@@ -61,7 +86,7 @@ class UserConfig {
 
 
     public static function versionsVersion(repoPrefix: String): String {
-        var version = UserConfig.repoConfig.get("versions_version");
+        var version = getRepoConfig().get("versions_version");
         if ( version == null ) 
             version = versionsVersionFromRepo(repoPrefix);
 
