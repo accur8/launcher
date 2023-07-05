@@ -18,21 +18,29 @@ class Main {
 
     static function loadConfig(commandLineParms: CommandLineParms): LaunchConfig {
 
-        var execPath = PathOps.executablePath();
-        var appName = execPath.file;
+        final execPath = PathOps.executablePath();
+        final appName = execPath.file;
 
-        var configExtensions = [".json", ".launcher.json"];
+        final configExt = ".json";
 
-        var configFile: Path = 
+        final configFile: Path = 
             if( commandLineParms.launcherJson != null ) {
                 PathOps.path(commandLineParms.launcherJson);
             } else {
-                var possibleConfigFiles = 
+                final realScriptParent = PathOps.executablePath().realPath().parent(); 
+                final possibleConfigFiles = 
                     execPath
                         .symlinkChain()
-                        .flatMap([l] => configExtensions.map([e] => l.parent().entry(l.name() + e)))
+                        .flatMap([l] =>
+                            [
+                                l.parent().entry(l.name() + configExt),
+                                realScriptParent.entry(l.name() + configExt)
+                            ]
+                        )
                         .array()
                         ;
+
+                // trace(possibleConfigFiles);
 
                 possibleConfigFiles
                     .find([f]=>f.exists())
@@ -118,7 +126,10 @@ Usage:
     --l-resolveOnly
         Does not run the app.
         Sets up the inventory file(s) in a8VersionCache (~/a8/versions/cache) which contain app installer config and classpaths to jars.
-    
+
+    --l-showVersion
+        Show the version of the app that is installed.
+
     --l-help
         Does not run the app.
         Shows this help text.
@@ -148,6 +159,8 @@ Usage:
             var args = PySys.argv.copy();
 
             Logger.traceEnabled = !config.quiet;
+
+            // Sys.println(commandLineParms);
 
             if ( commandLineParms.showHelp ) {
                 Sys.print(helpString());
@@ -228,6 +241,7 @@ typedef CommandLineParms = {
     @:optional var explicitVersion: String;
     @:optional var launcherJson: String;    
     @:optional var showHelp: Bool;
+    @:optional var showVersion: Bool;
 
 }
 

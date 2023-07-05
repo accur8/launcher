@@ -15,6 +15,7 @@ import python.Lib.PySys;
 import haxe.ds.Option;
 import Sys;
 import a8.Constants;
+import a8.Platform;
 
 @:tink
 class Launcher {
@@ -157,6 +158,7 @@ class Launcher {
             env: null,
             cwd: null,
             executable: null,
+            version: null,
         };
     }
 
@@ -269,6 +271,7 @@ class Launcher {
             env: newEnv,
             cwd: installDir.realPathStr(),
             executable: args[0],
+            version: config.appInstallerConfig.version,
         };
 
     }
@@ -276,6 +279,8 @@ class Launcher {
 
     public function runAndWait(): Int {
 
+        logTrace("execPath = " + PlatformOps.instance.executablePath());
+        logTrace("realExecPath = " + PlatformOps.instance.executablePath().realPath());
         logTrace("installDir = " + installDir);
         logTrace("logsDir = " + logsDir);
         logTrace("logArchivesDir = " + logArchivesDir);
@@ -292,12 +297,15 @@ class Launcher {
                 throw new Exception("unable to resolve config kind " + config.kind);
 
         if ( this.config.commandLineParms.resolveOnly ) {
+            Sys.println("--l-resolveOnly SUCCESS installed " + resolvedLaunch.version);
+            return 0;
+        } else if ( this.config.commandLineParms.showVersion ) {
+            Sys.println("--l-showVersion " + resolvedLaunch.version);
             return 0;
         } else {
 
             if ( config.logFiles )
                 archiveOldLogs();
-
 
             switch resolvedLaunch.kind {
                 case "exec": 
@@ -366,5 +374,6 @@ typedef ResolvedLaunch = {
     var env: python.Dict<String,String>;
     var cwd: String;
     var executable: String;
+    var version: String;
 }
 

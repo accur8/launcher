@@ -38,6 +38,13 @@ class CommandLineProcessor {
                 },
                 processed: false
             },{ 
+                name: "--l-showVersion", 
+                parmCount: 0,
+                apply: function(config: CommandLineParms, args: Option<String>) {
+                    config.showVersion = args.nonEmpty();
+                },
+                processed: false
+            },{ 
                 name: "--l-help", 
                 parmCount: 0,
                 apply: function(config: CommandLineParms, args: Option<String>) {
@@ -54,11 +61,11 @@ class CommandLineProcessor {
         tempArgs.reverse();
 
         var newArgs = [];
-        var config = {
+        var config: CommandLineParms = {
             programName: tempArgs.pop(),
             rawCommandLineArgs: PySys.argv.copy(),
             resolvedCommandLineArgs: newArgs,
-            resolveOnly: false
+            resolveOnly: false,
         };
 
         var argDefs = commandLineArgDefs();

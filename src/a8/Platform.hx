@@ -78,7 +78,6 @@ class PythonPlatform extends AbstractPlatform implements Platform {
         return python.lib.os.Path.islink(path.toString());
     }
 
-
     public function absPath(path: Path): Path {
         return PathOps.path(python.lib.os.Path.normpath(python.lib.os.Path.abspath(path.toString())));
     }
